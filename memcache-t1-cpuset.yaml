@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: some-memcached
+  labels:
+    name: some-memcached
+spec:
+  containers:
+    - image: anakli/memcached:t1
+      name: memcached
+      imagePullPolicy: Always
+      command: ["/bin/sh"]
+      args: ["-c", "taskset -c 0 ./memcached -t 1 -u memcache"]
+  nodeSelector:
+    cca-project-nodetype: "memcached"
+
+

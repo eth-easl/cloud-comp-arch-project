@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ibench-cpu
+  labels:
+    name: ibench-cpu
+spec:
+  containers:
+    - image: anakli/ibench:cpu
+      name: ibench-cpu
+      command: ["/bin/sh"]
+      args: ["-c", "taskset -c 0 ./cpu 1200"]
+  nodeSelector:
+    cca-project-nodetype: "memcached"
+

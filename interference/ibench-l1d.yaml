@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ibench-l1d
+  labels:
+    name: ibench-l1d
+spec:
+  containers:
+    - image: anakli/ibench:l1d
+      name: ibench-l1d
+      command: ["/bin/sh"]
+      args: ["-c", "taskset -c 0 ./l1d 1200"]
+  nodeSelector:
+    cca-project-nodetype: "memcached"
+
