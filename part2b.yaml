@@ -93,6 +93,7 @@ spec:
   nodeLabels:
     cloud.google.com/metadata-proxy-ready: "true"
     kops.k8s.io/instancegroup: nodes-europe-west3-a
+    cca-project-nodetype: "parsec"
   role: Node
   subnets:
   - europe-west3

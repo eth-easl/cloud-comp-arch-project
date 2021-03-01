@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: parsec-canneal
+  labels:
+    name: pasec-canneal
+spec:
+  template:
+    spec:
+      containers:
+      - image: anakli/parsec:canneal-native-reduced
+        name: parseccanneal
+        imagePullPolicy: Always
+        command: ["/bin/sh"]
+        args: ["-c", "./bin/parsecmgmt -a run -p canneal -i native -n 1"]
+      restartPolicy: Never
+      nodeSelector:
+        cca-project-nodetype: "parsec"
