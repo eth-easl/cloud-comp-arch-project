@@ -1,0 +1,148 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  creationTimestamp: null
+  name: part4.k8s.local
+spec:
+  api:
+    loadBalancer:
+      type: Public
+  authorization:
+    rbac: {}
+  channel: stable
+  cloudConfig:
+    gceServiceAccount: default
+  cloudProvider: gce
+  configBase: gs://cloud-computing-eth-2021-dgr/part4.k8s.local
+  containerRuntime: docker
+  etcdClusters:
+  - cpuRequest: 200m
+    etcdMembers:
+    - instanceGroup: master-europe-west3-a
+      name: a
+    memoryRequest: 100Mi
+    name: main
+  - cpuRequest: 100m
+    etcdMembers:
+    - instanceGroup: master-europe-west3-a
+      name: a
+    memoryRequest: 100Mi
+    name: events
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+  kubelet:
+    anonymousAuth: false
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  kubernetesVersion: 1.19.7
+  masterPublicName: api.part4.k8s.local
+  networking:
+    kubenet: {}
+  nonMasqueradeCIDR: 100.64.0.0/10
+  project: cloud-computing-architecture
+  sshAccess:
+  - 0.0.0.0/0
+  subnets:
+  - name: europe-west3
+    region: europe-west3
+    type: Public
+  topology:
+    dns:
+      type: Public
+    masters: public
+    nodes: public
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: null
+  labels:
+    kops.k8s.io/cluster: part4.k8s.local
+  name: master-europe-west3-a
+spec:
+  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  machineType: e2-standard-2
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    cloud.google.com/metadata-proxy-ready: "true"
+    kops.k8s.io/instancegroup: master-europe-west3-a
+  role: Master
+  subnets:
+  - europe-west3
+  zones:
+  - europe-west3-a
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: null
+  labels:
+    kops.k8s.io/cluster: part4.k8s.local
+  name: memcache-server
+spec:
+  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  machineType: e2-standard-4
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    cloud.google.com/metadata-proxy-ready: "true"
+    kops.k8s.io/instancegroup: nodes-europe-west3-a
+    cca-project-nodetype: "memcached"
+  role: Node
+  subnets:
+  - europe-west3
+  zones:
+  - europe-west3-a
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: null
+  labels:
+    kops.k8s.io/cluster: part4.k8s.local
+  name: client-measure
+spec:
+  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  machineType: e2-standard-2
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    cloud.google.com/metadata-proxy-ready: "true"
+    kops.k8s.io/instancegroup: nodes-europe-west3-a
+    cca-project-nodetype: "client-measure"
+  role: Node
+  subnets:
+  - europe-west3
+  zones:
+  - europe-west3-a
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: null
+  labels:
+    kops.k8s.io/cluster: part4.k8s.local
+  name: client-agent
+spec:
+  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  machineType: e2-standard-16
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    cloud.google.com/metadata-proxy-ready: "true"
+    kops.k8s.io/instancegroup: nodes-europe-west3-a
+    cca-project-nodetype: "client-agent"
+  role: Node
+  subnets:
+  - europe-west3
+  zones:
+  - europe-west3-a
