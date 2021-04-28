@@ -10,17 +10,22 @@ json_file = json.load(file)
 start_times = []
 completion_times = []
 for item in json_file['items']:
-    name = item['metadata']['name']
+    name = item['status']['containerStatuses'][0]['name']
     print("Job: ", str(name))
-    start_time = datetime.strptime(item['status']['startTime'],
-                                   time_format)
-    completion_time = datetime.strptime(item['status']['completionTime'],
-                                        time_format)
-    print("Job time: ", completion_time - start_time)
-    start_times.append(start_time)
-    completion_times.append(completion_time)
-    if not item['status']['succeeded']:
-        print("Job {0} has not terminated!".format(name))
+    if str(name) != "memcached":
+        try:
+            start_time = datetime.strptime(
+                    item['status']['containerStatuses'][0]['state']['terminated']['startedAt'],
+                    time_format)
+            completion_time = datetime.strptime(
+                    item['status']['containerStatuses'][0]['state']['terminated']['finishedAt'],
+                    time_format)
+            print("Job time: ", completion_time - start_time)
+            start_times.append(start_time)
+            completion_times.append(completion_time)
+        except KeyError:
+            print("Job {0} has not completed....".format(name))
+            sys.exit(0)
 
 if len(start_times) != 6 and len(completion_times) != 6:
     print("You haven't run all the PARSEC jobs. Exiting...")
