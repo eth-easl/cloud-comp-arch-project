@@ -13,7 +13,7 @@ spec:
   cloudConfig:
     gceServiceAccount: default
   cloudProvider: gce
-  configBase: gs://cloud-computing-eth-2021-dgr/part4.k8s.local
+  configBase: gs://<your-gs-bucket>/part4.k8s.local
   containerRuntime: docker
   etcdClusters:
   - cpuRequest: 200m
@@ -40,7 +40,7 @@ spec:
   networking:
     kubenet: {}
   nonMasqueradeCIDR: 100.64.0.0/10
-  project: cloud-computing-architecture
+  project: <your-cloud-computing-architecture-gcp-project>
   sshAccess:
   - 0.0.0.0/0
   subnets:
