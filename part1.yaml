@@ -13,7 +13,7 @@ spec:
   cloudConfig:
     gceServiceAccount: default
   cloudProvider: gce
-  configBase: gs://cca-eth-2021-group-XXX-ethzid/part1.k8s.local
+  configBase: gs://cca-eth-2022-group-XXX-ethzid/part1.k8s.local
   containerRuntime: docker
   etcdClusters:
   - cpuRequest: 200m
@@ -40,7 +40,7 @@ spec:
   networking:
     kubenet: {}
   nonMasqueradeCIDR: 100.64.0.0/10
-  project: cca-eth-2021-group-XXX
+  project: cca-eth-2022-group-XXX
   sshAccess:
   - 0.0.0.0/0
   subnets:
