@@ -13,7 +13,7 @@ spec:
   cloudConfig:
     gceServiceAccount: default
   cloudProvider: gce
-  configBase: gs://<your-gs-bucket>/part4.k8s.local
+  configBase: gs://cca-eth-2022-group-XXX-ethzid/part4.k8s.local
   containerRuntime: docker
   etcdClusters:
   - cpuRequest: 200m
@@ -40,7 +40,7 @@ spec:
   networking:
     kubenet: {}
   nonMasqueradeCIDR: 100.64.0.0/10
-  project: <your-cloud-computing-architecture-gcp-project>
+  project: cca-eth-2022-group-XXX
   sshAccess:
   - 0.0.0.0/0
   subnets:
@@ -87,7 +87,7 @@ metadata:
   name: memcache-server
 spec:
   image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
-  machineType: e2-standard-4
+  machineType: n2d-highmem-4
   maxSize: 1
   minSize: 1
   nodeLabels:
