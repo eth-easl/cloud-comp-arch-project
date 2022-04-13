@@ -9,7 +9,7 @@ spec:
     - image: anakli/ibench:l2
       name: ibench-l2
       command: ["/bin/sh"]
-      args: ["-c", "taskset -c 0 ./l2 120"]
+      args: ["-c", "taskset -c 0 ./l2 1200"]
   nodeSelector:
     cca-project-nodetype: "memcached"
 
