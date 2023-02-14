@@ -87,7 +87,7 @@ metadata:
   name: memcache-server
 spec:
   image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
-  machineType: n2d-highcpu-2
+  machineType: t2d-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:
