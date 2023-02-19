@@ -1,18 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: parsec-splash2x-fft
+  name: parsec-radix
   labels:
-    name: pasec-splash2x-fft
+    name: parsec-radix
 spec:
   template:
     spec:
       containers:
-      - image: anakli/parsec:simlarge
-        name: parsec-splash2x-fft
+      - image: anakli/cca:splash2x_radix
+        name: parsec-radix
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./bin/parsecmgmt -a run -p splash2x.fft -i simlarge -n 1"]
+        args: ["-c", "./run -a run -S splash2x -p radix -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"
