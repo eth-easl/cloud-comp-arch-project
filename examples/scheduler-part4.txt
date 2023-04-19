@@ -1,0 +1,10 @@
+2023-04-12T11:13:46.591828 start scheduler
+2023-04-12T11:13:46.591857 start memcached [0] 3
+2023-04-12T11:14:31.663978 start canneal [1,2,3] 8
+2023-04-12T11:14:40.976039 pause canneal
+2023-04-12T11:15:12.245838 update_cores memcached [2,3]
+2023-04-12T11:15:23.687179 update_cores canneal [0,1,2,3]
+2023-04-12T11:15:25.899373 custom canneal This+is+a+custom+event.+You+can+write+whatever+you+want%21
+2023-04-12T11:15:33.671561 unpause canneal
+2023-04-12T11:15:44.636126 end canneal
+2023-04-12T11:15:49.006639 end scheduler
