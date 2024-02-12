@@ -3,16 +3,16 @@ kind: Job
 metadata:
   name: parsec-dedup
   labels:
-    name: pasec-dedup
+    name: parsec-dedup
 spec:
   template:
     spec:
       containers:
-      - image: anakli/parsec:dedup-native-reduced
-        name: parsecdedup
+      - image: anakli/cca:parsec_dedup
+        name: parsec-dedup
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./bin/parsecmgmt -a run -p dedup -i native -n 1"]
+        args: ["-c", "./run -a run -S parsec -p dedup -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"

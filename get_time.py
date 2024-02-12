@@ -27,7 +27,7 @@ for item in json_file['items']:
             print("Job {0} has not completed....".format(name))
             sys.exit(0)
 
-if len(start_times) != 6 and len(completion_times) != 6:
+if len(start_times) != 7 and len(completion_times) != 7:
     print("You haven't run all the PARSEC jobs. Exiting...")
     sys.exit(0)
 

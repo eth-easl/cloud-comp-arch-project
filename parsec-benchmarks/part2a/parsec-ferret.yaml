@@ -3,16 +3,16 @@ kind: Job
 metadata:
   name: parsec-ferret
   labels:
-    name: pasec-ferret
+    name: parsec-ferret
 spec:
   template:
     spec:
       containers:
-      - image: anakli/parsec:simlarge
-        name: parsecferret
+      - image: anakli/cca:parsec_ferret
+        name: parsec-ferret
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./bin/parsecmgmt -a run -p ferret -i simlarge -n 1"]
+        args: ["-c", "./run -a run -S parsec -p ferret -i simlarge -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"

@@ -3,16 +3,16 @@ kind: Job
 metadata:
   name: parsec-canneal
   labels:
-    name: pasec-canneal
+    name: parsec-canneal
 spec:
   template:
     spec:
       containers:
-      - image: anakli/parsec:simlarge
-        name: parseccanneal
+      - image: anakli/cca:parsec_canneal
+        name: parsec-canneal
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./bin/parsecmgmt -a run -p canneal -i simlarge -n 1"]
+        args: ["-c", "./run -a run -S parsec -p canneal -i simlarge -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"

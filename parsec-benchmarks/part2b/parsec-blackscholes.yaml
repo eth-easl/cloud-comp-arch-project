@@ -3,16 +3,16 @@ kind: Job
 metadata:
   name: parsec-blackscholes
   labels:
-    name: pasec-blackscholes
+    name: parsec-blackscholes
 spec:
   template:
     spec:
       containers:
-      - image: anakli/parsec:blackscholes-native-reduced
-        name: parsecblackscholes
+      - image: anakli/cca:parsec_blackscholes
+        name: parsec-blackscholes
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./bin/parsecmgmt -a run -p blackscholes -i native -n 1"]
+        args: ["-c", "./run -a run -S parsec -p blackscholes -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"

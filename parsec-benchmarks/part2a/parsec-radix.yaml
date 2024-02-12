@@ -1,18 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: parsec-blackscholes
+  name: parsec-radix
   labels:
-    name: parsec-blackscholes
+    name: parsec-radix
 spec:
   template:
     spec:
       containers:
-      - image: anakli/cca:parsec_blackscholes
-        name: parsec-blackscholes
+      - image: anakli/cca:splash2x_radix
+        name: parsec-radix
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p blackscholes -i simlarge -n 1"]
+        args: ["-c", "./run -a run -S splash2x -p radix -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"
