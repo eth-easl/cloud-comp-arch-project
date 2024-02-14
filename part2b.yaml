@@ -63,7 +63,7 @@ metadata:
     kops.k8s.io/cluster: part2b.k8s.local
   name: master-europe-west3-a
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-2
   maxSize: 1
   minSize: 1
@@ -86,7 +86,7 @@ metadata:
     kops.k8s.io/cluster: part2b.k8s.local
   name: parsec-server
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-8
   maxSize: 1
   minSize: 1
