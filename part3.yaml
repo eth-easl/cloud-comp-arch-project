@@ -14,7 +14,7 @@ spec:
     gceServiceAccount: default
   cloudProvider: gce
   configBase: gs://<your-gs-bucket>/part3.k8s.local
-  containerRuntime: docker
+  containerRuntime: containerd
   etcdClusters:
   - cpuRequest: 200m
     etcdMembers:
@@ -35,7 +35,7 @@ spec:
     anonymousAuth: false
   kubernetesApiAccess:
   - 0.0.0.0/0
-  kubernetesVersion: 1.23.16
+  kubernetesVersion: 1.28.6
   masterPublicName: api.part3.k8s.local
   networking:
     kubenet: {}
