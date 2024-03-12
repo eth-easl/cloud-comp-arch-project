@@ -63,7 +63,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: master-europe-west3-a
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-2
   maxSize: 1
   minSize: 1
@@ -86,7 +86,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: client-measure
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-2
   maxSize: 1
   minSize: 1
@@ -109,7 +109,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: client-agent-a
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-2
   maxSize: 1
   minSize: 1
@@ -133,7 +133,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: client-agent-b
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-4
   maxSize: 1
   minSize: 1
@@ -156,7 +156,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: node-a-2core
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: n2d-highcpu-2
   maxSize: 1
   minSize: 1
@@ -179,7 +179,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: node-b-4core
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: n2d-highmem-4
   maxSize: 1
   minSize: 1
@@ -202,7 +202,7 @@ metadata:
     kops.k8s.io/cluster: part3.k8s.local
   name: node-c-8core
 spec:
-  image: ubuntu-os-cloud/ubuntu-1804-bionic-v20210211
+  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
   machineType: e2-standard-8
   maxSize: 1
   minSize: 1
