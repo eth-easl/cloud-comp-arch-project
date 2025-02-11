@@ -35,7 +35,7 @@ spec:
     anonymousAuth: false
   kubernetesApiAccess:
   - 0.0.0.0/0
-  kubernetesVersion: 1.28.6
+  kubernetesVersion: 1.31.5
   masterPublicName: api.part1.k8s.local
   networking:
     kubenet: {}
