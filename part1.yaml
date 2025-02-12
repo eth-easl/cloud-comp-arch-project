@@ -35,7 +35,7 @@ spec:
     anonymousAuth: false
   kubernetesApiAccess:
   - 0.0.0.0/0
-  kubernetesVersion: 1.28.6
+  kubernetesVersion: 1.31.5
   masterPublicName: api.part1.k8s.local
   networking:
     kubenet: {}
@@ -49,9 +49,9 @@ spec:
     type: Public
   topology:
     dns:
-      type: Public
-    masters: public
-    nodes: public
+      type: None
+    masters: Public
+    nodes: Public
 
 ---
 
@@ -63,8 +63,8 @@ metadata:
     kops.k8s.io/cluster: part1.k8s.local
   name: master-europe-west3-a
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
-  machineType: e2-standard-2
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
+  machineType: n2-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -86,8 +86,8 @@ metadata:
     kops.k8s.io/cluster: part1.k8s.local
   name: memcache-server
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
-  machineType: n2d-highcpu-2
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
+  machineType: n2-highcpu-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -110,8 +110,8 @@ metadata:
     kops.k8s.io/cluster: part1.k8s.local
   name: client-measure
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
-  machineType: e2-standard-2
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
+  machineType: n2-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -123,6 +123,7 @@ spec:
   - europe-west3
   zones:
   - europe-west3-a
+
 ---
 
 apiVersion: kops.k8s.io/v1alpha2
@@ -133,8 +134,8 @@ metadata:
     kops.k8s.io/cluster: part1.k8s.local
   name: client-agent
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
-  machineType: e2-standard-16
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
+  machineType: e2-standard-8
   maxSize: 1
   minSize: 1
   nodeLabels:
