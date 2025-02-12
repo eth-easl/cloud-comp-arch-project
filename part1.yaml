@@ -64,7 +64,7 @@ metadata:
   name: master-europe-west3-a
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: e2-standard-2
+  machineType: n2-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -87,7 +87,7 @@ metadata:
   name: memcache-server
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2d-highcpu-2
+  machineType: n2-highcpu-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -111,7 +111,7 @@ metadata:
   name: client-measure
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: e2-standard-2
+  machineType: n2-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -123,6 +123,7 @@ spec:
   - europe-west3
   zones:
   - europe-west3-a
+
 ---
 
 apiVersion: kops.k8s.io/v1alpha2
@@ -134,7 +135,7 @@ metadata:
   name: client-agent
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: e2-standard-16
+  machineType: e2-standard-8
   maxSize: 1
   minSize: 1
   nodeLabels:
