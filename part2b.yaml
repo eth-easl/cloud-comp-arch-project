@@ -35,7 +35,7 @@ spec:
     anonymousAuth: false
   kubernetesApiAccess:
   - 0.0.0.0/0
-  kubernetesVersion: 1.28.6
+  kubernetesVersion: 1.31.5
   masterPublicName: api.part2b.k8s.local
   networking:
     kubenet: {}
@@ -49,7 +49,7 @@ spec:
     type: Public
   topology:
     dns:
-      type: Public
+      type: None
     masters: public
     nodes: public
 
@@ -63,7 +63,7 @@ metadata:
     kops.k8s.io/cluster: part2b.k8s.local
   name: master-europe-west3-a
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
   machineType: e2-standard-2
   maxSize: 1
   minSize: 1
@@ -86,8 +86,8 @@ metadata:
     kops.k8s.io/cluster: part2b.k8s.local
   name: parsec-server
 spec:
-  image: ubuntu-os-cloud/ubuntu-2204-jammy-v20240208
-  machineType: e2-standard-8
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
+  machineType: n2-standard-8
   maxSize: 1
   minSize: 1
   nodeLabels:
