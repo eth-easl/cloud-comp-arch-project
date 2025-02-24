@@ -18,13 +18,13 @@ spec:
   etcdClusters:
   - cpuRequest: 200m
     etcdMembers:
-    - instanceGroup: master-europe-west3-a
+    - instanceGroup: master-europe-west1-b
       name: a
     memoryRequest: 100Mi
     name: main
   - cpuRequest: 100m
     etcdMembers:
-    - instanceGroup: master-europe-west3-a
+    - instanceGroup: master-europe-west1-b
       name: a
     memoryRequest: 100Mi
     name: events
@@ -44,8 +44,8 @@ spec:
   sshAccess:
   - 0.0.0.0/0
   subnets:
-  - name: europe-west3
-    region: europe-west3
+  - name: europe-west1
+    region: europe-west1
     type: Public
   topology:
     dns:
@@ -61,7 +61,7 @@ metadata:
   creationTimestamp: null
   labels:
     kops.k8s.io/cluster: part2b.k8s.local
-  name: master-europe-west3-a
+  name: master-europe-west1-b
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
   machineType: e2-standard-2
@@ -69,12 +69,12 @@ spec:
   minSize: 1
   nodeLabels:
     cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: master-europe-west3-a
+    kops.k8s.io/instancegroup: master-europe-west1-b
   role: Master
   subnets:
-  - europe-west3
+  - europe-west1
   zones:
-  - europe-west3-a
+  - europe-west1-b
 
 ---
 
@@ -92,10 +92,10 @@ spec:
   minSize: 1
   nodeLabels:
     cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: nodes-europe-west3-a
+    kops.k8s.io/instancegroup: nodes-europe-west1-b
     cca-project-nodetype: "parsec"
   role: Node
   subnets:
-  - europe-west3
+  - europe-west1
   zones:
-  - europe-west3-a
+  - europe-west1-b
