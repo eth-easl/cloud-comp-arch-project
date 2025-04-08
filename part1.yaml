@@ -52,6 +52,8 @@ spec:
       type: None
     masters: Public
     nodes: Public
+  cloudControllerManager:
+    image: gcr.io/k8s-staging-cloud-provider-gcp/cloud-controller-manager:master@sha256:e125f4e6792978125546e64279a13de18fdf6b704edfec8400cac1254d3adf88
 
 ---
 
