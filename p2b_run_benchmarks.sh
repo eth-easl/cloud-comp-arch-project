@@ -11,12 +11,6 @@ THREADS=(1 2 4 8)
 # Number of repetitions per measurement
 REPS=3
 
-# Check if temp_yamls directory exists
-if [ ! -d "temp_yamls" ]; then
-    echo "Error: temp_yamls directory not found."
-    echo "Please run p2b_generate_yamls.sh first to generate the modified YAML files."
-    exit 1
-fi
 
 # Create results directory if it doesn't exist
 mkdir -p p2b_results
@@ -32,7 +26,7 @@ for thread_count in "${THREADS[@]}"; do
             echo "Running $workload with $thread_count thread(s) (rep $rep)"
             
             # Use the pre-generated YAML file
-            YAML_FILE="temp_yamls/${workload}_${thread_count}threads.yaml"
+            YAML_FILE="p2b_temp_yamls/${workload}_${thread_count}threads.yaml"
             
             if [ ! -f "$YAML_FILE" ]; then
                 echo "Error: YAML file $YAML_FILE not found"
