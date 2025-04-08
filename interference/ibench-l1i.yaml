@@ -12,5 +12,5 @@ spec:
       command: ["/bin/sh"]
       args: ["-c", "taskset -c 0 ./l1i 1200 10"]
   nodeSelector:
-    cca-project-nodetype: "memcached"
+    cca-project-nodetype: "parsec"
 
