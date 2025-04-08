@@ -15,29 +15,6 @@ WORKLOADS=("parsec-blackscholes" "parsec-canneal" "parsec-dedup" "parsec-ferret"
 # Number of repetitions per measurement
 REPS=2
 
-########################################
-# Run benchmarks without any interference
-########################################
-echo "Running benchmarks without interference"
-for workload in "${WORKLOADS[@]}"; do
-    for rep in $(seq 1 $REPS); do
-        echo "Running workload $workload without interference (rep $rep)"
-        # Launch the workload job
-        kubectl create -f parsec-benchmarks/part2a/${workload}.yaml
-
-        # Wait until the job completes (assumes job name equals workload name)
-        kubectl wait --for=condition=complete job/"$workload" --timeout=600s
-
-        # Get the pod name for the job (assumes only one pod per job)
-        POD=$(kubectl get pods | grep "$workload" | awk '{print $1}')
-        # Save logs to a file with a name that encodes the workload and repetition
-        kubectl logs "$POD" > p2_results/"${workload}_no_interference_rep${rep}.log"
-
-        # Clean up the job
-        kubectl delete job "$workload"
-    done
-done
-echo "Completed benchmarks without interference."
 
 ########################################
 # Run benchmarks with interferences
@@ -65,7 +42,7 @@ for interference in "${INTERFERENCES[@]}"; do
             # Get the pod name for the job (assumes only one pod per job)
             POD=$(kubectl get pods | grep "$workload" | awk '{print $1}')
             # Save logs to a file with a name that encodes workload, interference and repetition
-            kubectl logs "$POD" > p2_results/"${workload}_${interference}_rep${rep}.log"
+            kubectl logs "$POD" > p2a_results/"${workload}_${interference}_rep${rep}.log"
 
             # Clean up the job
             kubectl delete job "$workload"
