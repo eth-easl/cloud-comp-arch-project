@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ibench-membw
+  labels:
+    name: ibench-membw
+spec:
+  containers:
+    - image: anakli/ibench:memCap
+      name: ibench-mem
+      command: ["/bin/sh"]
+      args: ["-c", "taskset -c 1 ./memBw 1200"]
+  nodeSelector:
+    cca-project-nodetype: "parsec"
+
