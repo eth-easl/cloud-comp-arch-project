@@ -26,7 +26,7 @@ for thread_count in "${THREADS[@]}"; do
             echo "Running $workload with $thread_count thread(s) (rep $rep)"
             
             # Use the pre-generated YAML file
-            YAML_FILE="p2b_temp_yamls/${workload}_${thread_count}threads.yaml"
+            YAML_FILE="parsec-benchmarks/part2b/${workload}_${thread_count}threads.yaml"
             
             if [ ! -f "$YAML_FILE" ]; then
                 echo "Error: YAML file $YAML_FILE not found"

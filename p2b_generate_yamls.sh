@@ -9,7 +9,7 @@ WORKLOADS=("parsec-blackscholes" "parsec-canneal" "parsec-dedup" "parsec-ferret"
 THREADS=(1 2 4 8)
 
 # Create directories for temp yaml files and results
-mkdir -p temp_yamls
+mkdir -p parsec-benchmarks/part2b
 mkdir -p p2b_results
 
 echo "Generating YAML files with modified thread counts..."
@@ -19,7 +19,7 @@ for thread_count in "${THREADS[@]}"; do
     
     for workload in "${WORKLOADS[@]}"; do
         # Create a temporary YAML file with the modified thread count
-        TEMP_YAML="temp_yamls/${workload}_${thread_count}threads.yaml"
+        TEMP_YAML="parsec-benchmarks/part2b/${workload}_${thread_count}threads.yaml"
         
         # Copy the original YAML and update the thread count
         cp parsec-benchmarks/part2b/${workload}.yaml "$TEMP_YAML"
