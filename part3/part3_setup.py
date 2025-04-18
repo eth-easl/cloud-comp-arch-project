@@ -39,28 +39,34 @@ def setup_cluster(state_store, part3_yaml_path):
     nodes_info = run_command("kubectl get nodes -o wide", capture_output=True)
     print(f"Cluster nodes:\n{nodes_info}")
 
-def label_nodes():
-    """Label the nodes with cca-project-nodetype labels."""
-    node_types = {
-        "node-a-2core": "node-a-2core",
-        "node-b-2core": "node-b-2core",
-        "node-c-4core": "node-c-4core",
-        "node-d-4core": "node-d-4core"
-    }
+def get_memcached_ip():
+    """Get the memcached pod IP if it exists."""
+    # Check if memcached pod exists
+    pod_check = run_command("kubectl get pods -o wide | grep memcached", capture_output=True, check=False)
     
-    # Get all node names
-    nodes_output = run_command("kubectl get nodes -o json", capture_output=True)
-    nodes_data = json.loads(nodes_output)
+    if pod_check:
+        pod_info_lines = pod_check.split("\n")
+        pod_ip = None
+        for line in pod_info_lines:
+            if "memcached" in line:
+                pod_ip = line.split()[5]  # IP should be in the 6th column
+                break
+        
+        if pod_ip:
+            print(f"Found existing memcached pod IP: {pod_ip}")
+            return pod_ip
     
-    for node in nodes_data["items"]:
-        node_name = node["metadata"]["name"]
-        for node_pattern, node_type in node_types.items():
-            if node_pattern in node_name:
-                run_command(f"kubectl label nodes {node_name} cca-project-nodetype={node_type}")
-                print(f"Labeled node {node_name} as cca-project-nodetype={node_type}")
+    print("No existing memcached pod found")
+    return None
 
 def setup_memcached(node_type, thread_count, cpuset):
     """Setup memcached on the specified node with the specified thread count."""
+    # Check if memcached pod already exists
+    existing_ip = get_memcached_ip()
+    if existing_ip:
+        print("Memcached is already deployed, returning existing IP")
+        return existing_ip
+    
     # Create the memcached yaml from template
     with open("memcache/memcached-p3.yaml", "r") as f:
         memcached_yaml = f.read()
@@ -169,8 +175,51 @@ def setup_mcperf_clients():
         "client_measure": client_measure
     }
 
+def restart_mcperf_agents(clients_info):
+    """Restart mcperf agents on client nodes to fix synchronization issues."""
+    if not clients_info:
+        print("Error: No client info provided")
+        return
+        
+    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
+    
+    # Kill any running mcperf processes
+    kill_cmd = "pkill -f mcperf || true"
+    
+    # Restart agents on both client-agent nodes
+    for agent_key in ['client_agent_a', 'client_agent_b']:
+        # Kill any existing mcperf processes
+        ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info[agent_key]['name']} --zone europe-west1-b --command \"{kill_cmd}\""
+        run_command(ssh_cmd, check=False)
+        
+    # Also kill on measure node to be safe
+    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"{kill_cmd}\""
+    run_command(ssh_cmd, check=False)
+    
+    print("Killed existing mcperf processes, waiting for cleanup...")
+    time.sleep(5)
+    
+    # Restart the mcperf agent on client-agent-a
+    agent_a_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 2 -A"
+    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_a']['name']} --zone europe-west1-b --command \"{agent_a_cmd}\" &"
+    run_command(ssh_cmd, check=False)
+    
+    # Restart the mcperf agent on client-agent-b
+    agent_b_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 4 -A"
+    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_b']['name']} --zone europe-west1-b --command \"{agent_b_cmd}\" &"
+    run_command(ssh_cmd, check=False)
+    
+    print("Restarted mcperf agents")
+    
+    print(f"You can now run the load test with:")
+    print(f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"~/start_load.sh\" > mcperf_results_local.txt")
+
 def start_mcperf_load(clients_info, memcached_ip):
     """Start the mcperf load generator on the client nodes."""
+    if not memcached_ip:
+        print("Error: No memcached IP provided")
+        return
+        
     ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
     
     # Start the mcperf agent on client-agent-a
@@ -188,15 +237,10 @@ def start_mcperf_load(clients_info, memcached_ip):
     ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"{load_cmd}\""
     run_command(ssh_cmd, check=False)
     
-    # Start the measurement on client-measure
-    measure_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5"
-    print(f"To start the measurement, run: {measure_cmd}")
-    print(f"SSH to client-measure with: gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b")
-    
     # Create a script on client-measure to start the load
     start_load_script = f"""#!/bin/bash
 cd ~/memcache-perf-dynamic
-./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5 > mcperf_results.txt
+./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5
 """
     
     with open("start_load.sh", "w") as f:
@@ -210,7 +254,10 @@ cd ~/memcache-perf-dynamic
     chmod_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"chmod +x ~/start_load.sh\""
     run_command(chmod_cmd, check=False)
     
-    print("Setup completed! To start the load, SSH to client-measure and run ~/start_load.sh")
+    print(f"SSH to client-measure with: gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b")
+    
+    print("Setup completed! To run the load test and get results directly on your machine, use:")
+    print(f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"~/start_load.sh\" > mcperf_results_local.txt")
 
 def main():
     parser = argparse.ArgumentParser(description="Setup script for Part 3 of the CCA project")
@@ -221,23 +268,48 @@ def main():
     parser.add_argument("--cpuset", default="0", help="CPU cores to pin memcached to (e.g., '0,1')")
     parser.add_argument("--setup-cluster", action="store_true", help="Setup the Kubernetes cluster")
     parser.add_argument("--setup-mcperf", action="store_true", help="Setup mcperf on client nodes")
+    parser.add_argument("--setup-memcached", action="store_true", help="Setup memcached on the specified node")
+    parser.add_argument("--restart-mcperf", action="store_true", help="Restart mcperf agents to fix synchronization issues")
     
     args = parser.parse_args()
     
     # Setup the cluster if requested
     if args.setup_cluster:
         setup_cluster(args.state_store, args.part3_yaml)
-        # Label the nodes
-        #label_nodes()
     
-    # Setup memcached
-    memcached_ip = setup_memcached(args.node_type, args.thread_count, args.cpuset)
+    # Variable to hold memcached_ip
+    memcached_ip = None
+    
+    # Setup memcached if requested
+    if args.setup_memcached:
+        memcached_ip = setup_memcached(args.node_type, args.thread_count, args.cpuset)
+    
+    # Variable to hold clients_info
+    clients_info = None
     
     # Setup mcperf if requested
     if args.setup_mcperf:
+        # If we didn't set up memcached in this run, try to get the IP
+        if not memcached_ip:
+            memcached_ip = get_memcached_ip()
+            
+        # Make sure we have the memcached IP before proceeding
+        if not memcached_ip:
+            print("Error: Could not determine memcached IP. Make sure memcached is deployed before setting up mcperf.")
+            sys.exit(1)
+            
         clients_info = setup_mcperf_clients()
-        if clients_info and memcached_ip:
+        if clients_info:
             start_mcperf_load(clients_info, memcached_ip)
+    
+    # Restart mcperf agents if requested
+    if args.restart_mcperf:
+        # Get client info if not already available
+        if not clients_info:
+            clients_info = setup_mcperf_clients()
+            
+        if clients_info:
+            restart_mcperf_agents(clients_info)
 
 if __name__ == "__main__":
     main() 

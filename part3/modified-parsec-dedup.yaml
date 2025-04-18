@@ -12,7 +12,7 @@ spec:
         name: parsec-dedup
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "CPUSET_PREFIX./run -a run -S parsec -p dedup -i native -n THREAD_COUNT"]
+        args: ["-c", "./run -a run -S parsec -p dedup -i native -n 3"]
       restartPolicy: Never
       nodeSelector:
-        cca-project-nodetype: "NODE_TYPE"
+        cca-project-nodetype: "node-c-4core"
