@@ -6,29 +6,10 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-# ============================================================================
-# START OF SCHEDULING POLICY
-# ============================================================================
-
 # node-a-2core : e2-highmem-2
 # node-b-2core : n2-highcpu-2
 # node-c-4core : c3-highcpu-4
 # node-d-4core : n2-standard-4
-
-# Format: benchmark_name: (node_type, thread_count, cpuset)
-SCHEDULING_PLAN = {
-    "blackscholes": ("node-a-2core", 1),      
-    "canneal": ("node-b-2core", 2),          
-    "dedup": ("node-c-4core", 2),          
-    "ferret": ("node-d-4core", 3),          
-    "freqmine": ("node-a-2core", 1),          
-    "radix": ("node-c-4core", 2),            
-    "vips": ("node-d-4core", 1),             
-}
-
-# ============================================================================
-# END OF SCHEDULING POLICY
-# ============================================================================
 
 PARSEC_YAML_DIR = "./parsec-benchmarks"
 
@@ -87,42 +68,20 @@ def launch_job(benchmark, node_type, threads, cpuset=None):
     
     return job_name
 
-def cleanup_jobs():
-    """Delete all PARSEC jobs."""
-    # Delete jobs
-    run_command("kubectl delete jobs")
-    # Clean up temporary files
-    run_command("rm -f modified-parsec-*.yaml")
-    print("Cleaned up all PARSEC jobs and temporary files")
-
 def main():
-    # Parse command line arguments
-    import argparse
-    parser = argparse.ArgumentParser(description="PARSEC scheduler using existing YAML files")
-    parser.add_argument("--cleanup", action="store_true", help="Delete all existing PARSEC jobs before starting")
-    args = parser.parse_args()
-    
-    # Clean up existing jobs if requested
-    if args.cleanup:
-        cleanup_jobs()
-    
-    # Launch jobs based on the scheduling plan
-    job_names = []
     
     print("\n=== Executing Scheduling Plan ===")
     print(f"{'Benchmark':<15} {'Node Type':<15} {'Threads':<8} {'CPU Set':<10}")
     print("-" * 55)
-    
-    for benchmark, config in SCHEDULING_PLAN.items():
-        node_type = config[0]
-        threads = config[1]
-        cpuset = config[2] if len(config) > 2 else None
         
-        print(f"{benchmark:<15} {node_type:<15} {threads:<8} {cpuset if cpuset else 'None':<10}")
-        
-        job_name = launch_job(benchmark, node_type, threads, cpuset)
-        if job_name:
-            job_names.append(job_name)
+    launch_job("blackscholes", "node-a-2core", 1)
+    launch_job("canneal", "node-b-2core", 2)
+    launch_job("dedup", "node-c-4core", 2)
+    launch_job("ferret", "node-d-4core", 3)
+    launch_job("freqmine", "node-a-2core", 1)
+    launch_job("radix", "node-c-4core", 2)
+    launch_job("vips", "node-d-4core", 1)
+
     
     print("\nScheduling complete!")
     print("To monitor jobs: kubectl get jobs")
