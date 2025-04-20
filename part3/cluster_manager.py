@@ -4,8 +4,6 @@ from utils import run_command
 import os
 import sys
 import time
-import json
-import subprocess
 import argparse
 
 def setup_cluster(state_store, cluster_config_yaml):
@@ -115,7 +113,7 @@ def deploy_memcached(node_type, thread_count, cpuset, output_dir="."):
     y = y.replace("THREADCOUNT", str(thread_count))
     y = y.replace("CPUSET", cpuset)
     
-    # Write it into your experiment directory
+    # Write config YAML to experiment folder
     deploy_path = os.path.join(output_dir, "memcached-deploy.yaml")
     with open(deploy_path, "w") as f:
         f.write(y)
@@ -140,154 +138,12 @@ def deploy_memcached(node_type, thread_count, cpuset, output_dir="."):
 
     print("[ERROR] Could not find memcached IP after deploy")
     return None
+
+def delete_all_jobs():
+    """Delete all jobs in the Kubernetes cluster."""
+    run_command("kubectl delete jobs --all", check=False)
     
 
-def setup_mcperf_clients():
-    """Setup mcperf on client-agent and client-measure nodes."""
-    # Get node information
-    nodes_output = run_command("kubectl get nodes -o json", capture_output=True)
-    nodes_data = json.loads(nodes_output)
-    
-    client_agent_a = None
-    client_agent_b = None
-    client_measure = None
-    
-    # Find the client nodes
-    for node in nodes_data["items"]:
-        node_name = node["metadata"]["name"]
-        if "client-agent-a" in node_name:
-            client_agent_a = {
-                "name": node_name,
-                "internal_ip": node["status"]["addresses"][0]["address"],
-                "external_ip": node["status"]["addresses"][1]["address"]
-            }
-        elif "client-agent-b" in node_name:
-            client_agent_b = {
-                "name": node_name,
-                "internal_ip": node["status"]["addresses"][0]["address"],
-                "external_ip": node["status"]["addresses"][1]["address"]
-            }
-        elif "client-measure" in node_name:
-            client_measure = {
-                "name": node_name,
-                "internal_ip": node["status"]["addresses"][0]["address"],
-                "external_ip": node["status"]["addresses"][1]["address"]
-            }
-    
-    if not (client_agent_a and client_agent_b and client_measure):
-        print("Could not find all required client nodes")
-        return None
-    
-    print(f"Client Agent A: {client_agent_a}")
-    print(f"Client Agent B: {client_agent_b}")
-    print(f"Client Measure: {client_measure}")
-    
-    # Setup mcperf on each node
-    setup_commands = [
-        "sudo sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources",
-        "sudo apt-get update",
-        "sudo apt-get install libevent-dev libzmq3-dev git make g++ --yes",
-        "sudo apt-get build-dep memcached --yes",
-        "cd && git clone https://github.com/eth-easl/memcache-perf-dynamic.git",
-        "cd ~/memcache-perf-dynamic && make"
-    ]
-    
-    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
-    
-    for node in [client_agent_a, client_agent_b, client_measure]:
-        for cmd in setup_commands:
-            ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{node['name']} --zone europe-west1-b --command \"{cmd}\""
-            run_command(ssh_cmd, check=False)  # Don't check as some commands might fail but still be ok
-    
-    return {
-        "client_agent_a": client_agent_a,
-        "client_agent_b": client_agent_b,
-        "client_measure": client_measure
-    }
-
-def restart_mcperf_agents(clients_info):
-    """Restart mcperf agents on client nodes to fix synchronization issues."""
-    if not clients_info:
-        print("Error: No client info provided")
-        return
-        
-    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
-    
-    # Kill any running mcperf processes
-    kill_cmd = "pkill -f mcperf || true"
-    
-    # Restart agents on both client-agent nodes
-    for agent_key in ['client_agent_a', 'client_agent_b']:
-        # Kill any existing mcperf processes
-        ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info[agent_key]['name']} --zone europe-west1-b --command \"{kill_cmd}\""
-        run_command(ssh_cmd, check=False)
-        
-    # Also kill on measure node to be safe
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"{kill_cmd}\""
-    run_command(ssh_cmd, check=False)
-    
-    print("Killed existing mcperf processes, waiting for cleanup...")
-    time.sleep(5)
-    
-    # Restart the mcperf agent on client-agent-a
-    agent_a_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 2 -A"
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_a']['name']} --zone europe-west1-b --command \"{agent_a_cmd}\" &"
-    run_command(ssh_cmd, check=False)
-    
-    # Restart the mcperf agent on client-agent-b
-    agent_b_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 4 -A"
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_b']['name']} --zone europe-west1-b --command \"{agent_b_cmd}\" &"
-    run_command(ssh_cmd, check=False)
-    
-    print("Restarted mcperf agents")
-    
-    print(f"You can now run the load test with:")
-    print(f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"~/start_load.sh\" > mcperf_results_local.txt")
-
-def start_mcperf_load(clients_info, memcached_ip):
-    """Start the mcperf load generator on the client nodes."""
-    if not memcached_ip:
-        print("Error: No memcached IP provided")
-        return
-        
-    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
-    
-    # Start the mcperf agent on client-agent-a
-    agent_a_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 2 -A"
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_a']['name']} --zone europe-west1-b --command \"{agent_a_cmd}\" &"
-    run_command(ssh_cmd, check=False)
-    
-    # Start the mcperf agent on client-agent-b
-    agent_b_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -T 4 -A"
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_agent_b']['name']} --zone europe-west1-b --command \"{agent_b_cmd}\" &"
-    run_command(ssh_cmd, check=False)
-    
-    # Load the database on client-measure
-    load_cmd = f"cd ~/memcache-perf-dynamic && ./mcperf -s {memcached_ip} --loadonly"
-    ssh_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"{load_cmd}\""
-    run_command(ssh_cmd, check=False)
-    
-    # Create a script on client-measure to start the load
-    start_load_script = f"""#!/bin/bash
-        cd ~/memcache-perf-dynamic
-        ./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5
-        """
-    
-    with open("start_load.sh", "w") as f:
-        f.write(start_load_script)
-    
-    # Copy the script to client-measure
-    scp_cmd = f"gcloud compute scp --ssh-key-file {ssh_key_path} start_load.sh ubuntu@{clients_info['client_measure']['name']}:~ --zone europe-west1-b"
-    run_command(scp_cmd, check=False)
-    
-    # Make the script executable
-    chmod_cmd = f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"chmod +x ~/start_load.sh\""
-    run_command(chmod_cmd, check=False)
-    
-    print(f"SSH to client-measure with: gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b")
-    
-    print("Setup completed! To run the load test and get results directly on your machine, use:")
-    print(f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{clients_info['client_measure']['name']} --zone europe-west1-b --command \"~/start_load.sh\" > mcperf_results_local.txt")
 
 def main():
     parser = argparse.ArgumentParser(description="Setup script for Part 3 of the CCA project")
