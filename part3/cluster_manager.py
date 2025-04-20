@@ -1,33 +1,44 @@
 #!/usr/bin/env python3
 
+from utils import run_command
 import os
 import sys
 import time
 import json
 import subprocess
 import argparse
-from pathlib import Path
 
-def run_command(command, shell=True, check=True, capture_output=False):
-    """Run a shell command and return the output if capture_output is True."""
-    print(f"Running: {command}")
-    result = subprocess.run(command, shell=shell, check=check, capture_output=capture_output, text=True)
-    if capture_output:
-        return result.stdout.strip()
-    return None
+def setup_cluster(state_store, cluster_config_yaml):
+    """
+    Sets up a Kubernetes cluster using kops.
+    This function configures the Kubernetes cluster by setting the required 
+    environment variables, creating the cluster using a provided configuration 
+    file, updating the cluster, validating it, and retrieving information about 
+    the cluster nodes.
 
-def setup_cluster(state_store, part3_yaml_path):
-    """Setup the Kubernetes cluster using kops."""
+    Parameters
+    ----------
+    state_store (str)
+        The GCS bucket URI to be used as the KOPS state store.
+        This is where kops stores its configuration and state files.
+    cluster_config_yaml (str)
+        The file path to the YAML configuration file that defines the cluster 
+        specifications.
+
+    Returns
+    -------
+    None
+    """
     # Set the KOPS_STATE_STORE environment variable
     os.environ["KOPS_STATE_STORE"] = state_store
-    print(f"Set KOPS_STATE_STORE to {state_store}")
+    print(f"[STATUS] Set KOPS_STATE_STORE to {state_store}")
     
     # Get the project name
     project = run_command("gcloud config get-value project", capture_output=True)
-    print(f"Project: {project}")
+    print(f"[INFO] Project name: {project}")
     
     # Create the cluster
-    run_command(f"kops create -f {part3_yaml_path}")
+    run_command(f"kops create -f {cluster_config_yaml}")
     
     # Update the cluster
     run_command("kops update cluster --name part3.k8s.local --yes --admin")
@@ -37,7 +48,7 @@ def setup_cluster(state_store, part3_yaml_path):
     
     # Get the nodes
     nodes_info = run_command("kubectl get nodes -o wide", capture_output=True)
-    print(f"Cluster nodes:\n{nodes_info}")
+    print(f"[STATUS] Cluster nodes:\n{nodes_info}")
 
 def get_memcached_ip():
     """Get the memcached pod IP if it exists."""
@@ -53,64 +64,83 @@ def get_memcached_ip():
                 break
         
         if pod_ip:
-            print(f"Found existing memcached pod IP: {pod_ip}")
+            print(f"[STATUS] Found existing memcached pod IP: {pod_ip}")
             return pod_ip
     
-    print("No existing memcached pod found")
+    print("[STATUS] No existing memcached pod found")
     return None
 
-def setup_memcached(node_type, thread_count, cpuset):
-    """Setup memcached on the specified node with the specified thread count."""
-    # Check if memcached pod already exists
+def deploy_memcached(node_type, thread_count, cpuset, output_dir="."):
+    """
+    Deploys memcached on a Kubernetes node with specified resources.
+    This function checks if memcached is already deployed and returns its IP;
+    otherwise it renders the memcached-p3.yaml template with the given
+    node_type, thread_count, and cpuset, writes it into the specified output_dir,
+    applies it, exposes the service, waits for it, and returns the pod IP.
+    
+    Parameters
+    ----------
+    node_type (str)
+        The nodetype label to schedule memcached onto (e.g. "node-a-2core").
+    thread_count (int)
+        The number of threads memcached should use.
+    cpuset (str)
+        A comma-delimited list of CPU cores to pin memcached to (e.g. "0,1").
+    output_dir : str, optional
+        Directory where memcached-deploy.yaml will be written (default: 
+        current dir).
+    
+    Returns
+    -------
+    str or None
+        The IP address of the memcached pod if deployment succeeded, or None on
+        failure.
+    """
+    # Make sure the experiment folder exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Check if memcached is already running
     existing_ip = get_memcached_ip()
     if existing_ip:
-        print("Memcached is already deployed, returning existing IP")
-        return existing_ip
-    
-    # Create the memcached yaml from template
-    with open("memcache/memcached-p3.yaml", "r") as f:
-        memcached_yaml = f.read()
-    
-    # Replace placeholders
-    memcached_yaml = memcached_yaml.replace("NODETYPE", node_type)
-    memcached_yaml = memcached_yaml.replace("THREADCOUNT", str(thread_count))
-    memcached_yaml = memcached_yaml.replace("CPUSET", cpuset)
-    
-    # Write the modified yaml to a file
-    with open("memcached-deploy.yaml", "w") as f:
-        f.write(memcached_yaml)
-    
-    # Deploy memcached
-    run_command("kubectl create -f memcached-deploy.yaml")
-    
-    # Expose memcached
-    run_command("kubectl expose pod memcached --name memcached-11211 --type LoadBalancer --port 11211 --protocol TCP")
-    
-    # Wait for the service to get an external IP
-    print("Waiting for memcached service to get an external IP...")
-    time.sleep(60)
-    
-    # Get the service info
-    run_command("kubectl get service memcached-11211")
-    
-    # Get the pod info
-    memcached_pod_info = run_command("kubectl get pods -o wide", capture_output=True)
-    print(f"Memcached pod info:\n{memcached_pod_info}")
-    
-    # Extract the pod IP
-    pod_info_lines = memcached_pod_info.split("\n")
-    pod_ip = None
-    for line in pod_info_lines:
-        if "memcached" in line:
-            pod_ip = line.split()[5]  # IP should be in the 6th column
-            break
-    
-    if pod_ip:
-        print(f"Memcached pod IP: {pod_ip}")
-        return pod_ip
+        print(
+            f"[STATUS] Memcached already up at {existing_ip}, applying update"
+        )
     else:
-        print("Could not find memcached pod IP")
-        return None
+        print("[STATUS] No existing memcached pod, creating new deployment")
+    
+    # Read & template out YAML
+    with open("memcache/memcached-p3.yaml", "r") as f:
+        y = f.read()
+    y = y.replace("NODETYPE", node_type)
+    y = y.replace("THREADCOUNT", str(thread_count))
+    y = y.replace("CPUSET", cpuset)
+    
+    # Write it into your experiment directory
+    deploy_path = os.path.join(output_dir, "memcached-deploy.yaml")
+    with open(deploy_path, "w") as f:
+        f.write(y)
+
+    # Apply & expose
+    run_command(f"kubectl create -f {deploy_path}")
+    run_command(
+        "kubectl expose pod memcached "
+        "--name memcached-11211 --type LoadBalancer --port 11211 --protocol TCP"
+        " --dry-run=client -o yaml | kubectl apply -f -"
+    )
+
+    # Wait, then fetch IP
+    print("[STATUS] Waiting for memcached to be ready...")
+    time.sleep(60)
+    pod_info = run_command("kubectl get pods -o wide", capture_output=True)
+    for line in pod_info.splitlines():
+        if line.startswith("memcached"):
+            ip = line.split()[5]
+            print(f"[STATUS] Memcached pod IP: {ip}")
+            return ip
+
+    print("[ERROR] Could not find memcached IP after deploy")
+    return None
+    
 
 def setup_mcperf_clients():
     """Setup mcperf on client-agent and client-measure nodes."""
@@ -239,9 +269,9 @@ def start_mcperf_load(clients_info, memcached_ip):
     
     # Create a script on client-measure to start the load
     start_load_script = f"""#!/bin/bash
-cd ~/memcache-perf-dynamic
-./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5
-"""
+        cd ~/memcache-perf-dynamic
+        ./mcperf -s {memcached_ip} -a {clients_info['client_agent_a']['internal_ip']} -a {clients_info['client_agent_b']['internal_ip']} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5
+        """
     
     with open("start_load.sh", "w") as f:
         f.write(start_load_script)
@@ -268,7 +298,6 @@ def main():
     parser.add_argument("--cpuset", default="0", help="CPU cores to pin memcached to (e.g., '0,1')")
     parser.add_argument("--setup-cluster", action="store_true", help="Setup the Kubernetes cluster")
     parser.add_argument("--setup-mcperf", action="store_true", help="Setup mcperf on client nodes")
-    parser.add_argument("--setup-memcached", action="store_true", help="Setup memcached on the specified node")
     parser.add_argument("--restart-mcperf", action="store_true", help="Restart mcperf agents to fix synchronization issues")
     
     args = parser.parse_args()
@@ -280,9 +309,8 @@ def main():
     # Variable to hold memcached_ip
     memcached_ip = None
     
-    # Setup memcached if requested
-    if args.setup_memcached:
-        memcached_ip = setup_memcached(args.node_type, args.thread_count, args.cpuset)
+    # Deploy memcached
+    memcached_ip = deploy_memcached(args.node_type, args.thread_count, args.cpuset)
     
     # Variable to hold clients_info
     clients_info = None
@@ -312,4 +340,4 @@ def main():
             restart_mcperf_agents(clients_info)
 
 if __name__ == "__main__":
-    main() 
+    main()
