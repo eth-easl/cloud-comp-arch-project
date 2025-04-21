@@ -138,3 +138,21 @@ def collect_parsec_times(output_file):
         ["python3","get_time.py","pods.json"],
         stdout=open(output_file,"w")
     )
+
+def delete_all_parsec_jobs():
+    """
+    Deletes all PARSEC Job resources and their Pods from the Kubernetes cluster.
+    
+    This function:
+    1) Executes `kubectl delete jobs --all` to remove all Job objects.
+    2) Executes `kubectl delete pods --all` to remove any leftover Pods.
+    
+    Returns
+    -------
+    None
+    """
+    print(
+        "[STATUS] delete_all_parsec_jobs: Deleting all PARSEC jobs and pods..."
+    )
+    subprocess.run(["kubectl", "delete", "jobs", "--all"], check=False)
+    subprocess.run(["kubectl", "delete", "pods", "--all"], check=False)

@@ -173,38 +173,72 @@ def restart_mcperf_agents(clients_info):
         )
         return
          
-    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
+    # Kill existing mcperf processes
+    stop_mcperf_agents(clients_info)
     
-    # Kill any running mcperf processes
-    kill_cmd = "pkill -f mcperf || true"
-    
-    # Restart agents on both client-agent nodes
-    for agent_key in ['client_agent_a', 'client_agent_b']:
-        # Kill any existing mcperf processes
-        ssh_cmd = (
-            f"gcloud compute ssh --ssh-key-file {ssh_key_path} " +
-            f"ubuntu@{clients_info[agent_key]['name']} --zone europe-west1-b " +
-            f"--command \"{kill_cmd}\""
-        )
-        run_command(ssh_cmd, check=False)
-        
-    # Also kill measure node processes
-    ssh_cmd = (
-        f"gcloud compute ssh --ssh-key-file {ssh_key_path} " + 
-        f"ubuntu@{clients_info['client_measure']['name']} " + 
-        f"--zone europe-west1-b --command \"{kill_cmd}\""
-    )
-    run_command(ssh_cmd, check=False)
-    
+    # Poll until no mcperf processes remain on any client node
     print(
         f"[STATUS] restart_mcperf_agents: Killed existing mcperf processes, " +
         f"waiting for cleanup..."
     )
-    time.sleep(5)
+    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
+    for node_key in ['client_agent_a', 'client_agent_b', 'client_measure']:
+        node = clients_info[node_key]
+        while True:
+            check_cmd = (
+                f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+                f"ubuntu@{node['name']} --zone europe-west1-b "
+                f"--command \"pgrep -f mcperf || true\""
+            )
+            output = run_command(check_cmd, capture_output=True).strip()
+            if not output:
+                break
+            time.sleep(1)
+    print(
+        "[STATUS] restart_mcperf_agents: all previous mcperf processes exited"
+    )
 
+    # Restart mcperf agents
     start_load_agents(clients_info)
 
     print("[STATUS] restart_mcperf_agents: load agents restarted")
+    
+def stop_mcperf_agents(clients_info):
+    """
+    Stops mcperf agent processes on all client VMs.
+
+    This function:
+    1) Validates that a non-empty clients_info dict is provided.
+    2) SSHes into client-agent-a, client-agent-b, and client-measure nodes
+       to terminate any mcperf processes via `pkill -f mcperf`.
+
+    Parameters
+    ----------
+    clients_info : dict
+        A dict containing keys 'client_agent_a', 'client_agent_b', and
+        'client_measure', each mapping to a dict with at least 'name' indicating
+        the VM hostname.
+
+    Returns
+    -------
+    None
+    """
+    if not clients_info:
+        print("[ERROR] stop_mcperf_agents: No clients_info provided")
+        return
+
+    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
+    kill_cmd = "pkill -f mcperf || true"
+
+    for node_key in ['client_agent_a', 'client_agent_b', 'client_measure']:
+        node = clients_info[node_key]
+        cmd = (
+            f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+            f"ubuntu@{node['name']} --zone europe-west1-b "
+            f"--command \"{kill_cmd}\""
+        )
+        run_command(cmd, check=False)
+        print(f"[STATUS] stop_mcperf_agents: killed mcperf on {node_key}")
 
 def preload(clients_info, memcached_ip):
     """
@@ -247,7 +281,7 @@ def run_mcperf_load(
         memcached_ip,
         output_dir,
         scan = "30000:30500:5",
-        duration=10
+        duration = 10
     ):
     """
     Generates and runs the mcperf load test, saving results locally.
