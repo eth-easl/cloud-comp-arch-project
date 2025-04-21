@@ -1,4 +1,5 @@
 import os, json
+import shutil
 import argparse
 from datetime import datetime
 from cluster_manager import setup_cluster, deploy_memcached, delete_all_jobs
@@ -70,6 +71,13 @@ def run_experiments(args):
     base_dir  = f"results/{timestamp}"
     os.makedirs(base_dir, exist_ok=True)
 
+    # Copy the experiment config into the results folder for reproducibility
+    shutil.copy(
+        args.experiment_config,
+        os.path.join(base_dir, os.path.basename(args.experiment_config))
+    )
+    print(f"[STATUS] Copied experiment config to {base_dir}")
+    
     # Setup cluster if needed
     if not args.resuse_cluster:
         setup_cluster(args.state_store, args.cluster_config)
