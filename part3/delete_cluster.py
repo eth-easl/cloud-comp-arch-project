@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from utils import run_command
-import subprocess
 
 def delete_cluster(cluster_name):
     """ Delete all jobs, pods, and the cluster."""
