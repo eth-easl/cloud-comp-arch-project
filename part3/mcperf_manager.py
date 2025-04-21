@@ -4,19 +4,16 @@ from datetime import datetime
 import json
 import time
 
-def start_mcperf_agents():
+def setup_mcperf_agents():
     """
     Discovers client-agent-a, client-agent-b, and client-measure nodes, sets up
-    and builds mcperf on each, and launches mcperf agents on the client-agent
-    nodes.
+    and builds mcperf on each.
     
     This function:
     1) Uses `kubectl get nodes -o json` to find nodes named client-agent-a,
        client-agent-b, and client-measure.
     2) SSHes into each to install dependencies and build memcache-perf-dynamic.
-    3) SSHes into client-agent-a and client-agent-b to start mcperf in agent
-       mode with their respective thread counts.
-    4) Returns a dict with keys 'client_agent_a', 'client_agent_b', and
+    3) Returns a dict with keys 'client_agent_a', 'client_agent_b', and
        'client_measure', each mapping to a dict containing 'name',
        'internal_ip', and 'external_ip'.
     
@@ -58,14 +55,20 @@ def start_mcperf_agents():
     
     if not (client_agent_a and client_agent_b and client_measure):
         print(
-            "[ERROR] start_mcperf_agents: Could not find all required client " +
+            "[ERROR] setup_mcperf_agents: Could not find all required client " +
             "nodes"
         )
         return None
     
-    print(f"[INFO] start_mcperf_agents: Client Agent A: {client_agent_a}")
-    print(f"[INFO] start_mcperf_agents: Client Agent B: {client_agent_b}")
-    print(f"[INFO] start_mcperf_agents: Client Measure: {client_measure}")
+    print(f"[INFO] setup_mcperf_agents: Client Agent A: {client_agent_a}")
+    print(f"[INFO] setup_mcperf_agents: Client Agent B: {client_agent_b}")
+    print(f"[INFO] setup_mcperf_agents: Client Measure: {client_measure}")
+
+    clients_info = {
+        "client_agent_a": client_agent_a,
+        "client_agent_b": client_agent_b,
+        "client_measure": client_measure
+    }
     
     # Setup mcperf on each node
     setup_commands = [
@@ -89,13 +92,44 @@ def start_mcperf_agents():
             # Don't check as some commands might fail but still be ok
             run_command(ssh_cmd, check=False)
 
-    clients_info = {
-        "client_agent_a": client_agent_a,
-        "client_agent_b": client_agent_b,
-        "client_measure": client_measure
-    }
+    # Verification: ensure mcperf was built correctly
+    for node_key in ["client_agent_a", "client_agent_b", "client_measure"]:
+        node = clients_info[node_key]
+        verify_cmd = (
+            f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+            f"ubuntu@{node['name']} --zone europe-west1-b --command "
+            f"\"test -x ~/memcache-perf-dynamic/mcperf && echo INSTALLED || echo MISSING\""
+        )
+        output = run_command(verify_cmd, capture_output=True).strip()
+        if output != "INSTALLED":
+            print(
+                f"[ERROR] setup_mcperf_agents: mcperf installation failed on " + 
+                f"{node['name']}"
+            )
+            return None
+        else:
+            print(
+                f"[STATUS] setup_mcperf_agents: mcperf verified on " +
+                f"{node['name']}"
+            )
 
-    # Start mcperf agents
+    return clients_info
+
+def start_load_agents(clients_info):
+    """
+    Starts mcperf load-generating agents on client-agent-a and client-agent-b.
+
+    Parameters
+    ----------
+    clients_info : dict
+        Contains 'client_agent_a' and 'client_agent_b' entries, each with
+        'name'.
+
+    Returns
+    -------
+    None
+    """
+    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
     for agent_key, threads in [("client_agent_a", 2), ("client_agent_b", 4)]:
         node = clients_info[agent_key]
         cmd = (
@@ -105,11 +139,9 @@ def start_mcperf_agents():
         )
         run_command(cmd, check=False)
         print(
-            f"[STATUS] start_mcperf_agents: started mcperf agent on " + 
+            f"[STATUS] start_load_agents: started mcperf agent on " + 
             f"{agent_key} with {threads} threads"
         )
-
-    return clients_info
 
 def restart_mcperf_agents(clients_info):
     """
@@ -121,9 +153,8 @@ def restart_mcperf_agents(clients_info):
     2) Terminates any lingering mcperf processes on client-agent-a,
        client-agent-b, and client-measure via `pkill -f mcperf`.
     3) Waits briefly for processes to exit.
-    4) SSHes into client-agent-a and relaunches the mcperf agent with 2 threads.
-    5) SSHes into client-agent-b and relaunches the mcperf agent with 4 threads.
-    6) Prints a consolidated status message.
+    4) Relaunches client_agent_a and client_agent_b
+    5) Prints a consolidated status message.
     
     Parameters
     ----------
@@ -171,19 +202,9 @@ def restart_mcperf_agents(clients_info):
     )
     time.sleep(5)
 
-    # Restart mcperf agents
-    for agent_key, threads in [("client_agent_a", 2), ("client_agent_b", 4)]:
-        node = clients_info[agent_key]
-        cmd = (
-            f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{node['name']} "
-            f"--zone europe-west1-b --command "
-            f"\"cd ~/memcache-perf-dynamic && ./mcperf -T {threads} -A &\""
-        )
-        run_command(cmd, check=False)
-        print(
-            f"[STATUS] restart_mcperf_agents: restarted agent on {agent_key} " +
-            f"with {threads} threads"
-        )
+    start_load_agents(clients_info)
+
+    print("[STATUS] restart_mcperf_agents: load agents restarted")
 
 def preload(clients_info, memcached_ip):
     """
