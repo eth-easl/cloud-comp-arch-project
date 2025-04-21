@@ -1,6 +1,8 @@
 import os, json
 import shutil
 import argparse
+import subprocess
+import yaml
 from datetime import datetime
 from cluster_manager import setup_cluster, deploy_memcached, delete_all_jobs
 from mcperf_manager import (
@@ -20,54 +22,11 @@ from parsec_runner import (
 from delete_cluster import delete_cluster
 
 def load_matrix(path="experiment_matrix.json"):
-    # e.g. JSON file format:
-    # [
-    #     {     
-    #         "experiment_name": "exp1",
-    #         "mem_node": "node‑a‑2core",
-    #         "mem_threads": 2,
-    #         "mem_cpuset": "0,1",
-    #         "benchings": [
-    #           {
-    #               "name": "radix",
-    #               "node": "node‑b‑2core",
-    #               "threads": 2,
-    #               "cpuset": "0,1"
-    #           },  
-    #           {
-    #               "name": "dedup",
-    #               "node": "node‑c‑4core",
-    #               "threads": 4,
-    #               "cpuset": "0,1,2,3"
-    #           }
-    #         ]
-    #     },
-    #     {
-    #         "experiment_name": "exp2",
-    #         "mem_node": "node‑c‑4core",
-    #         "mem_threads": 4,
-    #         "mem_cpuset": "0,1,2,3",
-    #         "benchings": [
-    #           {
-    #               "name": "blackscholes",
-    #               "node": "node‑a‑2core",
-    #               "threads": 1,
-    #               "cpuset": "0"
-    #           },  
-    #           {
-    #               "name": "freqmine",
-    #               "node": "node‑d‑4core",
-    #               "threads": 4,
-    #               "cpuset": "0,1,2,3"
-    #           }
-    #         ]
-    #     }
-    # ]
     return json.load(open(path))
 
 def run_experiments(args):
     matrix = load_matrix(args.experiment_config)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%y%m%d_T%H%M%S")
     base_dir  = f"results/{timestamp}"
     os.makedirs(base_dir, exist_ok=True)
 
@@ -78,8 +37,34 @@ def run_experiments(args):
     )
     print(f"[STATUS] Copied experiment config to {base_dir}")
     
-    # Setup cluster if needed
-    if not args.resuse_cluster:
+    # Determine cluster name from kops config (supports multi-document YAML)
+    with open(args.cluster_config) as f:
+        docs = list(yaml.safe_load_all(f))
+    if not docs:
+        raise ValueError(f"No documents found in {args.cluster_config}")
+    # The first document defines the Cluster object
+    cluster_cfg = docs[0]
+    cluster_name = cluster_cfg.get("metadata", {}).get("name")
+    if not cluster_name:
+        raise ValueError(f"Could not determine cluster name from {args.cluster_config}")
+
+    if args.reuse_cluster:
+        print("[STATUS] Checking if cluster is up and healthy...")
+        cp = subprocess.run(
+            ["kops", "validate", "cluster",
+             "--name", cluster_name,
+             "--state", args.state_store,
+             "--wait", "1m"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        if cp.returncode != 0:
+            print("[STATUS] Cluster not found or unhealthy; creating it now.")
+            setup_cluster(args.state_store, args.cluster_config)
+        else:
+            print("[STATUS] Cluster is up and healthy; reusing.")
+    else:
+        print("[STATUS] Creating new cluster...")
         setup_cluster(args.state_store, args.cluster_config)
 
     # Setup and run mcperf agents
@@ -151,14 +136,14 @@ def run_experiments(args):
     # Teardown cluster if requested
     if args.teardown_cluster:
         print("[STATUS] Tearing down cluster...")
-        delete_cluster()
+        delete_cluster(cluster_name, args.state_store)
     else:
         print(
             "[STATUS] Cluster not torn down. To do so, run:\n" +
             "python3 delete_cluster.py"
         )
 
-    print("[STATUS] All experiments completed successfully.")
+    print("[STATUS] All experiments completed.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -180,7 +165,7 @@ if __name__ == "__main__":
         help = "Path to the experiment configuration file (JSON format)."
     )
     parser.add_argument(
-        "--resuse-cluster",
+        "--reuse-cluster",
         action = "store_true",
         help = (
            "Whether to reuse the cluster or not. Set to true if cluster " +

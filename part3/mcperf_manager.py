@@ -4,18 +4,26 @@ from datetime import datetime
 import json
 import time
 
-def setup_mcperf_agents():
+def setup_mcperf_agents(force_install = False):
     """
     Discovers client-agent-a, client-agent-b, and client-measure nodes, sets up
-    and builds mcperf on each.
+    and builds mcperf on each. If mcperf is already installed, it skips
+    installation.
     
     This function:
     1) Uses `kubectl get nodes -o json` to find nodes named client-agent-a,
        client-agent-b, and client-measure.
-    2) SSHes into each to install dependencies and build memcache-perf-dynamic.
+    2) SSHes into each to check if mcperf is already installed and executable.
+       If not, it installs dependencies and builds memcache-perf-dynamic.
     3) Returns a dict with keys 'client_agent_a', 'client_agent_b', and
        'client_measure', each mapping to a dict containing 'name',
        'internal_ip', and 'external_ip'.
+
+    Parameters
+    ----------
+    force_install : bool, optional
+        If True, forces reinstallation of mcperf even if it is already
+        installed. Default is False.
     
     Returns
     -------
@@ -70,7 +78,7 @@ def setup_mcperf_agents():
         "client_measure": client_measure
     }
     
-    # Setup mcperf on each node
+    # Setup mcperf on each node, skipping if already installed
     setup_commands = [
         "sudo sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources",
         "sudo apt-get update",
@@ -82,11 +90,33 @@ def setup_mcperf_agents():
     
     ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
     
-    for node in [client_agent_a, client_agent_b, client_measure]:
+    for node_key in ["client_agent_a", "client_agent_b", "client_measure"]:
+        node = clients_info[node_key]
+
+        # Check if mcperf is already installed
+        if not force_install:
+            check_cmd = (
+                f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+                f"ubuntu@{node['name']} --zone europe-west1-b --command "
+                f"\"test -x ~/memcache-perf-dynamic/mcperf && echo INSTALLED || echo MISSING\""
+            )
+            result = run_command(check_cmd, capture_output=True).strip()
+            if result == "INSTALLED":
+                print(
+                    f"[STATUS] setup_mcperf_agents: mcperf already installed " +
+                    f"on {node['name']}, skipping setup"
+                )
+                continue
+
+        # Otherwise run setup commands
+        print(
+            f"[STATUS] setup_mcperf_agents: setting up mcperf on " +
+            f"{node['name']}"
+        )
         for cmd in setup_commands:
             ssh_cmd = (
-                f"gcloud compute ssh --ssh-key-file {ssh_key_path} " +
-                f"ubuntu@{node['name']} --zone europe-west1-b --command " + 
+                f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+                f"ubuntu@{node['name']} --zone europe-west1-b --command "
                 f"\"{cmd}\""
             )
             # Don't check as some commands might fail but still be ok
@@ -134,13 +164,13 @@ def start_load_agents(clients_info):
         node = clients_info[agent_key]
         cmd = (
             f"gcloud compute ssh --ssh-key-file {ssh_key_path} ubuntu@{node['name']} "
-            f"--zone europe-west1-b --command \"cd ~/memcache-perf-dynamic && "
-            f"./mcperf -T {threads} -A &\""
+            f"--zone europe-west1-b --command \"nohup sh -c 'cd ~/memcache-perf-dynamic && "
+            f"./mcperf -T {threads} -A' > /dev/null 2>&1 &\""
         )
         run_command(cmd, check=False)
         print(
-            f"[STATUS] start_load_agents: started mcperf agent on " + 
-            f"{agent_key} with {threads} threads"
+            f"[STATUS] start_load_agents: started mcperf agent on {agent_key}" +
+            f" with {threads} threads"
         )
 
 def restart_mcperf_agents(clients_info):
