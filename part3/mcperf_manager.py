@@ -232,43 +232,33 @@ def restart_mcperf_agents(clients_info):
     start_load_agents(clients_info)
 
     print("[STATUS] restart_mcperf_agents: load agents restarted")
-    
-def stop_mcperf_agents(clients_info):
+
+def stop_mcperf_agents():
     """
-    Stops mcperf agent processes on all client VMs.
+    Stops mcperf agent processes on all client nodes via Kubernetes.
 
     This function:
-    1) Validates that a non-empty clients_info dict is provided.
-    2) SSHes into client-agent-a, client-agent-b, and client-measure nodes
-       to terminate any mcperf processes via `pkill -f mcperf`.
-
-    Parameters
-    ----------
-    clients_info : dict
-        A dict containing keys 'client_agent_a', 'client_agent_b', and
-        'client_measure', each mapping to a dict with at least 'name' indicating
-        the VM hostname.
+    1) Applies the 'kill-mcperf-job.yaml' Job, which runs a hostPID pod on each
+       mcperf-client node to invoke `pkill -f mcperf`.
+    2) Waits up to 30 seconds for the Job to reach the 'Complete' condition.
+    3) Deletes the Job and its pods to clean up.
 
     Returns
     -------
     None
     """
-    if not clients_info:
-        print("[ERROR] stop_mcperf_agents: No clients_info provided")
-        return
-
-    ssh_key_path = os.path.expanduser("~/.ssh/cloud-computing")
-    kill_cmd = "pkill -f mcperf || true"
-
-    for node_key in ['client_agent_a', 'client_agent_b', 'client_measure']:
-        node = clients_info[node_key]
-        cmd = (
-            f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
-            f"ubuntu@{node['name']} --zone europe-west1-b "
-            f"--command \"{kill_cmd}\""
-        )
-        run_command(cmd, check=False)
-        print(f"[STATUS] stop_mcperf_agents: killed mcperf on {node_key}")
+    # Apply the Kubernetes job that kills the mcperf processes
+    subprocess.run(
+        ["kubectl", "apply", "-f", "kill_mcperf_job.yaml"], 
+        check=True
+    )
+    # Wait for it to finish on all nodes (job should complete quickly)
+    subprocess.run(
+        ["kubectl", "wait", "--for=condition=complete", "job/kill-mcperf", "--timeout=30s"],
+        check=False
+    )
+    # Tear down
+    subprocess.run(["kubectl", "delete", "job", "kill-mcperf"], check=False)
 
 def preload(clients_info, memcached_ip):
     """

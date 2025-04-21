@@ -74,64 +74,64 @@ def run_experiments(args):
     # Keep track of the current memcached node to avoid redeploying
     current_mem_node = None
     
-    # Run all experiments
-    for exp in matrix:
-        experiment_name = exp["experiment_name"]
-        target_mem_node = exp["mem_node"]
-        mem_threads = exp["mem_threads"]
-        mem_cpuset = exp["mem_cpuset"]
+    # # Run all experiments
+    # for exp in matrix:
+    #     experiment_name = exp["experiment_name"]
+    #     target_mem_node = exp["mem_node"]
+    #     mem_threads = exp["mem_threads"]
+    #     mem_cpuset = exp["mem_cpuset"]
 
-        print(f"[STATUS] Running experiment: {experiment_name}")
+    #     print(f"[STATUS] Running experiment: {experiment_name}")
 
-        # Create a directory for the experiment
-        exp_dir = os.path.join(base_dir, experiment_name)
+    #     # Create a directory for the experiment
+    #     exp_dir = os.path.join(base_dir, experiment_name)
 
-        # only redeploy memcached if the target node has changed
-        if target_mem_node != current_mem_node:
-            print(f"[STATUS] Moving memcached → {target_mem_node}")
-            memcached_ip = deploy_memcached(
-                node = target_mem_node,
-                threads = mem_threads,
-                cpuset = mem_cpuset, 
-                output_dir = exp_dir  # so YAML lives in your experiment folder
-            )
-            current_mem_node = target_mem_node
-        else:
-            print(
-                f"[STATUS] Memcached already on {current_mem_node}, skipping " +
-                f"redeploy"
-            )
+    #     # only redeploy memcached if the target node has changed
+    #     if target_mem_node != current_mem_node:
+    #         print(f"[STATUS] Moving memcached → {target_mem_node}")
+    #         memcached_ip = deploy_memcached(
+    #             node = target_mem_node,
+    #             threads = mem_threads,
+    #             cpuset = mem_cpuset, 
+    #             output_dir = exp_dir  # so YAML lives in your experiment folder
+    #         )
+    #         current_mem_node = target_mem_node
+    #     else:
+    #         print(
+    #             f"[STATUS] Memcached already on {current_mem_node}, skipping " +
+    #             f"redeploy"
+    #         )
 
-        # Preload memcached
-        preload(clients_info, memcached_ip)
+    #     # Preload memcached
+    #     preload(clients_info, memcached_ip)
 
-        # Start mcperf load
-        mcperf_results = run_mcperf_load(
-            clients_info,
-            memcached_ip,
-            exp_dir
-        )
+    #     # Start mcperf load
+    #     mcperf_results = run_mcperf_load(
+    #         clients_info,
+    #         memcached_ip,
+    #         exp_dir
+    #     )
 
-        # Launch all PARSEC benchmarks concurrently for this experiment
-        benchings = exp["benchings"]
-        configs = [
-            (b["name"], b["node"], b["threads"], b.get("cpuset", ""))
-            for b in benchings
-        ]
-        # Apply scheduling and launch jobs
-        job_names = launch_jobs(configs, exp_dir)
-        # Wait until all batch jobs finish
-        wait_for_jobs(job_names)
-        # Collect start/end times for all pods into a results file
-        collect_parsec_times(os.path.join(exp_dir, "parsec_times.txt"))
-        # Clean up PARSEC jobs and pods before next run
-        delete_all_parsec_jobs()
-        # Restart mcperf agents to avoid synchronization issues
-        restart_mcperf_agents(clients_info)
+    #     # Launch all PARSEC benchmarks concurrently for this experiment
+    #     benchings = exp["benchings"]
+    #     configs = [
+    #         (b["name"], b["node"], b["threads"], b.get("cpuset", ""))
+    #         for b in benchings
+    #     ]
+    #     # Apply scheduling and launch jobs
+    #     job_names = launch_jobs(configs, exp_dir)
+    #     # Wait until all batch jobs finish
+    #     wait_for_jobs(job_names)
+    #     # Collect start/end times for all pods into a results file
+    #     collect_parsec_times(os.path.join(exp_dir, "parsec_times.txt"))
+    #     # Clean up PARSEC jobs and pods before next run
+    #     delete_all_parsec_jobs()
+    #     # Restart mcperf agents to avoid synchronization issues
+    #     restart_mcperf_agents(clients_info)
 
     # Stop mcperf agents
     print("[STATUS] Stopping all mcperf agents...")
-    stop_mcperf_agents(clients_info)
+    stop_mcperf_agents()
 
     # Teardown cluster if requested
     if args.teardown_cluster:

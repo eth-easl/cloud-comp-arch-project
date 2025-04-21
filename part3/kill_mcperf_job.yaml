@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kill-mcperf
+spec:
+  template:
+    spec:
+      # run in the host PID namespace so we see host processes
+      hostPID: true
+      # mcperf-client nodes are labeled with cca-project-role=mcperf-client
+      nodeSelector:
+        cca-project-role: mcperf-client
+      # privileged so we can signal any user process
+      containers:
+      - name: killer
+        image: busybox:1.35
+        securityContext:
+          privileged: true
+        command: 
+        - sh
+        - -c
+        - |
+          echo "Killing any running mcperf on $(hostname)"
+          pkill -f mcperf || true
+      restartPolicy: OnFailure
+  backoffLimit: 0
