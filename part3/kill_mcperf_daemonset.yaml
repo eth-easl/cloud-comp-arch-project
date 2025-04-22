@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kill-mcperf
+spec:
+  selector:
+    matchLabels:
+      app: kill-mcperf
+  template:
+    metadata:
+      labels:
+        app: kill-mcperf
+    spec:
+      hostPID: true
+      nodeSelector:
+        cca-project-role: mcperf-client
+      containers:
+      - name: killer
+        image: busybox:1.35
+        securityContext:
+          privileged: true
+        command:
+        - sh
+        - -c
+        - |
+          echo "Killing mcperf on $(hostname)"
+          pkill -f mcperf || true
+      restartPolicy: Always

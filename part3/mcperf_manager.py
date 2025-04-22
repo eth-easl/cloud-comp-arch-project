@@ -204,7 +204,7 @@ def restart_mcperf_agents(clients_info):
         return
          
     # Kill existing mcperf processes
-    stop_mcperf_agents(clients_info)
+    stop_mcperf_agents()
     
     # Poll until no mcperf processes remain on any client node
     print(
@@ -216,9 +216,9 @@ def restart_mcperf_agents(clients_info):
         node = clients_info[node_key]
         while True:
             check_cmd = (
-                f"gcloud compute ssh --ssh-key-file {ssh_key_path} "
+                f"gcloud compute ssh --quiet --ssh-key-file {ssh_key_path} "
                 f"ubuntu@{node['name']} --zone europe-west1-b "
-                f"--command \"pgrep -f mcperf || true\""
+                f"--command \"pgrep mcperf || true\""
             )
             output = run_command(check_cmd, capture_output=True).strip()
             if not output:
@@ -238,27 +238,27 @@ def stop_mcperf_agents():
     Stops mcperf agent processes on all client nodes via Kubernetes.
 
     This function:
-    1) Applies the 'kill-mcperf-job.yaml' Job, which runs a hostPID pod on each
-       mcperf-client node to invoke `pkill -f mcperf`.
-    2) Waits up to 30 seconds for the Job to reach the 'Complete' condition.
-    3) Deletes the Job and its pods to clean up.
+    1) Applies the 'kill-mcperf-job.yaml' DaemonSet, which runs a hostPID
+       pod on each mcperf-client node to invoke `pkill -f mcperf`.
+    2) Waits briefly for the pods to execute (5 seconds).
+    3) Deletes the DaemonSet and its pods to clean up.
 
     Returns
     -------
     None
     """
-    # Apply the Kubernetes job that kills the mcperf processes
-    subprocess.run(
-        ["kubectl", "apply", "-f", "kill_mcperf_job.yaml"], 
-        check=True
+    # Apply the Kubernetes DaemonSet that kills the mcperf processes
+    print("[STATUS] stop_mcperf_agents: applying kill_mcperf_daemonset.yaml")
+    run_command("kubectl apply -f kill_mcperf_daemonset.yaml", check=False)
+
+    # Give the DaemonSet pods time to run the kill command
+    time.sleep(5)
+
+    # Tear down the DaemonSet and its pods
+    print(
+        "[STATUS] stop_mcperf_agents: deleting kill-mcperf DaemonSet and pods"
     )
-    # Wait for it to finish on all nodes (job should complete quickly)
-    subprocess.run(
-        ["kubectl", "wait", "--for=condition=complete", "job/kill-mcperf", "--timeout=30s"],
-        check=False
-    )
-    # Tear down
-    subprocess.run(["kubectl", "delete", "job", "kill-mcperf"], check=False)
+    run_command("kubectl delete daemonset kill-mcperf", check=False)
 
 def preload(clients_info, memcached_ip):
     """
