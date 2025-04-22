@@ -189,6 +189,7 @@ def delete_all_parsec_jobs():
     
     This function:
     1) Executes `kubectl delete jobs --all` to remove all parsec jobs.
+    2) Executes `kubectl delete pods --all` to remove all parsec pods.
     
     Returns
     -------
@@ -198,3 +199,4 @@ def delete_all_parsec_jobs():
         "[STATUS] delete_all_parsec_jobs: Deleting all PARSEC jobs and pods..."
     )
     run_command("kubectl delete jobs -l app=parsec", check = True)
+    run_command("kubectl delete pods -l app=parsec", check = True)

@@ -21,7 +21,7 @@ from parsec_runner import (
 )
 from delete_cluster import delete_cluster
 
-def load_matrix(path="experiment_matrix.json"):
+def load_matrix(path):
     return json.load(open(path))
 
 def run_experiments(args):
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--experiment-config",
-        default = "experiment_matrix.json",
+        default = "sample_experiment.json",
         help = "Path to the experiment configuration file (JSON format)."
     )
     parser.add_argument(
