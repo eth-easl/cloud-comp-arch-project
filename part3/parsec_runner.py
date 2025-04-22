@@ -79,6 +79,13 @@ def launch_jobs(configs, workdir):
         List of job names launched (metadata.name from each YAML).
     """
     job_names = []
+
+    # Prepare the launch times file
+    launch_times_path = os.path.join(workdir, "launch_times.txt")
+    # Overwrite any existing file
+    with open(launch_times_path, "w") as _:
+        pass
+
     for bench, node_type, thr, cpu in configs:
         yaml_path = modify_yaml_for_scheduling(
             bench,
@@ -95,6 +102,12 @@ def launch_jobs(configs, workdir):
 
         # Assuming each YAML defines a Job named `parsec-<benchmark>`
         job_name = f"parsec-{bench}"
+        
+        # Record the launch timestamp in milliseconds
+        start_ms = int(time.time() * 1000)
+        with open(launch_times_path, "a") as lt:
+            lt.write(f"Job:  {job_name}\n")
+            lt.write(f"Start time:  {start_ms}\n")
         job_names.append(job_name)
         
     return job_names

@@ -383,9 +383,9 @@ def run_mcperf_load(
     # Tail remote results locally in background
     results_file = os.path.join(output_dir, "mcperf_results_local.txt")
     tail_cmd = (
-        f"gcloud compute ssh --ssh-key-file {ssh_key} ubuntu@{measure['name']} "
-        f"--zone europe-west1-b --command \"tail -F {remote_results}\" "
-        f"> {results_file} 2>&1 &"
+        f"gcloud compute ssh --quiet --ssh-key-file {ssh_key} " +
+        f"ubuntu@{measure['name']} --zone europe-west1-b --command \"tail -F "
+        f"{remote_results}\" > {results_file} 2>/dev/null &"
     )
     run_command(tail_cmd, check=False)
     print(f"[STATUS] run_mcperf_load: tailing remote results to {results_file}")
