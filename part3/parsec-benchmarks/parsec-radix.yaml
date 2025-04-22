@@ -4,6 +4,7 @@ metadata:
   name: parsec-radix
   labels:
     name: parsec-radix
+    app: parsec
 spec:
   template:
     spec:

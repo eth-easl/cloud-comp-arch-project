@@ -4,6 +4,7 @@ metadata:
   name: parsec-canneal
   labels:
     name: parsec-canneal
+    app: parsec
 spec:
   template:
     spec:

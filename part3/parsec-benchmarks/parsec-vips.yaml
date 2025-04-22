@@ -4,6 +4,7 @@ metadata:
   name: parsec-vips
   labels:
     name: parsec-vips
+    app: parsec
 spec:
   template:
     spec:

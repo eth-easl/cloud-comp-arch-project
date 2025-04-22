@@ -4,6 +4,7 @@ metadata:
   name: parsec-blackscholes
   labels:
     name: parsec-blackscholes
+    app: parsec
 spec:
   template:
     spec:

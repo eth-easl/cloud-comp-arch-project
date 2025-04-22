@@ -4,6 +4,7 @@ metadata:
   name: parsec-ferret
   labels:
     name: parsec-ferret
+    app: parsec
 spec:
   template:
     spec:

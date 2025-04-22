@@ -4,6 +4,7 @@ metadata:
   name: parsec-freqmine
   labels:
     name: parsec-freqmine
+    app: parsec
 spec:
   template:
     spec:

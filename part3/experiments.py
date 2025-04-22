@@ -46,9 +46,11 @@ def run_experiments(args):
     cluster_cfg = docs[0]
     cluster_name = cluster_cfg.get("metadata", {}).get("name")
     if not cluster_name:
-        raise ValueError(f"Could not determine cluster name from {args.cluster_config}")
+        raise ValueError(
+            f"Could not determine cluster name from {args.cluster_config}"
+        )
 
-    if args.reuse_cluster:
+    if not args.relaunch_cluster:
         print("[STATUS] Checking if cluster is up and healthy...")
         cp = subprocess.run(
             ["kops", "validate", "cluster",
@@ -64,12 +66,15 @@ def run_experiments(args):
         else:
             print("[STATUS] Cluster is up and healthy; reusing.")
     else:
+        print("[STATUS] Tearing down existing cluster...")
+        delete_cluster(cluster_name, args.state_store)
         print("[STATUS] Creating new cluster...")
         setup_cluster(args.state_store, args.cluster_config)
 
     # Setup and run mcperf agents
     clients_info = setup_mcperf_agents()
-    start_load_agents(clients_info)
+    # Delete all jobs in the cluster in case of leftover jobs from previous runs
+    delete_all_jobs()
 
     # Keep track of the current memcached node to avoid redeploying
     current_mem_node = None
@@ -90,8 +95,8 @@ def run_experiments(args):
         if target_mem_node != current_mem_node:
             print(f"[STATUS] Moving memcached → {target_mem_node}")
             memcached_ip = deploy_memcached(
-                node = target_mem_node,
-                threads = mem_threads,
+                node_type = target_mem_node,
+                thread_count = mem_threads,
                 cpuset = mem_cpuset, 
                 output_dir = exp_dir  # so YAML lives in your experiment folder
             )
@@ -105,6 +110,9 @@ def run_experiments(args):
         # Preload memcached
         preload(clients_info, memcached_ip)
 
+        # Restart mcperf agents to avoid synchronization issues
+        restart_mcperf_agents(clients_info)
+
         # Start mcperf load
         mcperf_results = run_mcperf_load(
             clients_info,
@@ -115,7 +123,7 @@ def run_experiments(args):
         # Launch all PARSEC benchmarks concurrently for this experiment
         benchings = exp["benchings"]
         configs = [
-            (b["name"], b["node"], b["threads"], b.get("cpuset", ""))
+            (b["name"], b["node_type"], b["threads"], b.get("cpuset", ""))
             for b in benchings
         ]
         # Apply scheduling and launch jobs
@@ -123,11 +131,9 @@ def run_experiments(args):
         # Wait until all batch jobs finish
         wait_for_jobs(job_names)
         # Collect start/end times for all pods into a results file
-        collect_parsec_times(os.path.join(exp_dir, "parsec_times.txt"))
+        collect_parsec_times(exp_dir)
         # Clean up PARSEC jobs and pods before next run
         delete_all_parsec_jobs()
-        # Restart mcperf agents to avoid synchronization issues
-        restart_mcperf_agents(clients_info)
 
     # Stop mcperf agents
     print("[STATUS] Stopping all mcperf agents...")
@@ -165,17 +171,22 @@ if __name__ == "__main__":
         help = "Path to the experiment configuration file (JSON format)."
     )
     parser.add_argument(
-        "--reuse-cluster",
+        "--relaunch-cluster",
         action = "store_true",
         help = (
-           "Whether to reuse the cluster or not. Set to true if cluster " +
-           "is already up."
+           "If set, the cluster will get torn down and relaunched before " +
+           "executing the experiments." 
         )
     )
     parser.add_argument(
         "--teardown-cluster",
         action = "store_true",
-        help = "Teardown the cluster and delete all jobs/pods after completion."
+        help = "Teardown the cluster after completion."
+    )
+    parser.add_argument(
+        "--verbose",
+        action = "store_true",
+        help = "Print all commands being executed."
     )
 
     args = parser.parse_args()

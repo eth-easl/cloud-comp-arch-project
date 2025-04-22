@@ -24,5 +24,6 @@ spec:
         - -c
         - |
           echo "Killing mcperf on $(hostname)"
+          pkill -f "ssh.*tail -F .*mcperf_results_remote.txt"
           pkill -f mcperf || true
       restartPolicy: Always

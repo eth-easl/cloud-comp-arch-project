@@ -33,7 +33,7 @@ def setup_cluster(state_store, cluster_config_yaml):
     
     # Get the project name
     project = run_command("gcloud config get-value project", capture_output=True)
-    print(f"[INFO] setup_cluster: Project name: {project}")
+    print(f"[STATUS] setup_cluster: Project name: {project}")
     
     # Create the cluster
     run_command(f"kops create -f {cluster_config_yaml}")
@@ -130,16 +130,19 @@ def deploy_memcached(node_type, thread_count, cpuset, output_dir="."):
         f.write(y)
 
     # Apply & expose
-    run_command(f"kubectl create -f {deploy_path}")
+    run_command(f"kubectl apply -f {deploy_path}")
     run_command(
         "kubectl expose pod memcached "
         "--name memcached-11211 --type LoadBalancer --port 11211 --protocol TCP"
         " --dry-run=client -o yaml | kubectl apply -f -"
     )
 
-    # Wait, then fetch IP
+    # Wait for the memcached pod to report Ready
     print("[STATUS] deploy_memcached: Waiting for memcached to be ready...")
-    time.sleep(60)
+    run_command(
+        "kubectl wait --for=condition=Ready pod/memcached --timeout=120s",
+        check=True
+    )
     pod_info = run_command("kubectl get pods -o wide", capture_output=True)
     for line in pod_info.splitlines():
         if line.startswith("memcached"):

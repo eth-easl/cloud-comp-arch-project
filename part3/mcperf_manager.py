@@ -68,9 +68,9 @@ def setup_mcperf_agents(force_install = False):
         )
         return None
     
-    print(f"[INFO] setup_mcperf_agents: Client Agent A: {client_agent_a}")
-    print(f"[INFO] setup_mcperf_agents: Client Agent B: {client_agent_b}")
-    print(f"[INFO] setup_mcperf_agents: Client Measure: {client_measure}")
+    print(f"[STATUS] setup_mcperf_agents: Client Agent A: {client_agent_a}")
+    print(f"[STATUS] setup_mcperf_agents: Client Agent B: {client_agent_b}")
+    print(f"[STATUS] setup_mcperf_agents: Client Measure: {client_measure}")
 
     clients_info = {
         "client_agent_a": client_agent_a,
@@ -368,14 +368,27 @@ def run_mcperf_load(
     )
     run_command(chmod, check=False)
 
-    # Execute remote load and capture locally
-    results_file = os.path.join(output_dir, "mcperf_results_local.txt")
+    # Execute remote load in background via nohup, logging to remote file
+    remote_results = "~/mcperf_results_remote.txt"
     ssh_run = (
         f"gcloud compute ssh --ssh-key-file {ssh_key} ubuntu@{measure['name']} "
-        f"--zone europe-west1-b --command \"~/{remote_script}\""
-        f" > {results_file}"
+        f"--zone europe-west1-b --command "
+        f"\"nohup ~/{remote_script} > {remote_results} 2>&1 &\""
     )
-    run_command(ssh_run)
+    run_command(ssh_run, check=False)
+    print(
+        f"[STATUS] run_mcperf_load: detached mcperf load on {measure['name']}"
+    )
+
+    # Tail remote results locally in background
+    results_file = os.path.join(output_dir, "mcperf_results_local.txt")
+    tail_cmd = (
+        f"gcloud compute ssh --ssh-key-file {ssh_key} ubuntu@{measure['name']} "
+        f"--zone europe-west1-b --command \"tail -F {remote_results}\" "
+        f"> {results_file} 2>&1 &"
+    )
+    run_command(tail_cmd, check=False)
+    print(f"[STATUS] run_mcperf_load: tailing remote results to {results_file}")
 
     print(
         f"[STATUS] run_mcperf_load: mcperf load running, output saving to " + 

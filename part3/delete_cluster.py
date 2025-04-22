@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 from utils import run_command
+import os
 
 def delete_cluster(
-        cluster_name,
+        cluster_name = "part3.k8s.local",
         state_store = "gs://cca-eth-2025-group-092-fbaldin/"
     ):
     """ Delete all jobs, pods, and the cluster."""
     # Set the KOPS_STATE_STORE environment variable
-    run_command(f"export KOPS_STATE_STORE={state_store}")
+    os.environ["KOPS_STATE_STORE"] = state_store
 
     # Delete all jobs and pods
     run_command("kubectl delete jobs --all")

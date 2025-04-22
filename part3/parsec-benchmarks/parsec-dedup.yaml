@@ -4,6 +4,7 @@ metadata:
   name: parsec-dedup
   labels:
     name: parsec-dedup
+    app: parsec
 spec:
   template:
     spec:

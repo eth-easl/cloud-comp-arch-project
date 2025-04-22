@@ -1,6 +1,12 @@
 import subprocess
 
-def run_command(command, shell=True, check=True, capture_output=False):
+def run_command(
+        command,
+        shell = True,
+        check = True,
+        capture_output = False,
+        verbose = False
+    ):
     """
     Executes a shell command and optionally captures its output.
 
@@ -18,6 +24,8 @@ def run_command(command, shell=True, check=True, capture_output=False):
     capture_output (bool, optional)
         If True, captures the command's standard output and returns it as a 
         string. If False, the output is not captured. Defaults to False.
+    verbose (bool, optional)
+        If True, prints the command being executed. Defaults to False.
 
     Returns
     -------
@@ -26,7 +34,9 @@ def run_command(command, shell=True, check=True, capture_output=False):
         command as a stripped string. If `capture_output` is False, returns
         None.
     """
-    print(f"[EXECUTING] {command}")
+    if verbose:
+        print(f"[EXECUTING] {command}")
+
     result = subprocess.run(command, shell=shell, check=check, capture_output=capture_output, text=True)
     if capture_output:
         return result.stdout.strip()
