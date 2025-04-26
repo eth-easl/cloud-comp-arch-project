@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ibench-l2
+  labels:
+    name: ibench-l2
+spec:
+  containers:
+    - image: anakli/ibench:l2
+      name: ibench-l2
+      command: ["/bin/sh"]
+      args: ["-c", "taskset -c 0 ./l2 1200"]
+  nodeSelector:
+    cca-project-nodetype: "parsec"
+
