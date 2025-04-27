@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
                 subprocess.run(["kubectl", "delete", "job", job_name], env=env, check=True)
                 
-                write_run_data(f"output-{formatted_time}.csv", interference, job, r, u, s)
+                write_run_data(f"part2-output-{formatted_time}.csv", interference, job, r, u, s)
              
         if interference is not None:
             subprocess.run(["kubectl", "delete", "pod", int_name], env=env, check=True)
