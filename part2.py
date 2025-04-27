@@ -59,21 +59,21 @@ def write_run_data(filename, interference, job_name, real_time, user_time, sys_t
 if __name__ == '__main__':
     # Init steps
 
-    # subprocess.run(["gcloud", "auth", "application-default", "login"], check=True)
-    # subprocess.run(["gcloud", "init"], check=True)
-    # subprocess.run(["kops", "create", "-f", "part2a.yaml"], env=env, check=True)
-    # subprocess.run(["kops", "update", "cluster", "part2a.k8s.local", "--yes", "--admin"], env=env, check=True)
-    # subprocess.run(["kops", "validate", "cluster", "--wait", "10m"],  env=env, check=True)
-    # subprocess.run(["kubectl", "get", "nodes", "-o", "wide"], env=env, check=True)
+    subprocess.run(["gcloud", "auth", "application-default", "login"], check=True)
+    subprocess.run(["gcloud", "init"], check=True)
+    subprocess.run(["kops", "create", "-f", "part2a.yaml"], env=env, check=True)
+    subprocess.run(["kops", "update", "cluster", "part2a.k8s.local", "--yes", "--admin"], env=env, check=True)
+    subprocess.run(["kops", "validate", "cluster", "--wait", "10m"],  env=env, check=True)
+    subprocess.run(["kubectl", "get", "nodes", "-o", "wide"], env=env, check=True)
 
-    # output = subprocess.check_output(["kubectl", "get", "nodes", "-o", "wide"], env=env, text=True)
-    # lines = output.strip().split("\n")
-    # for line in lines[1:]:
-    #     if "parsec-server" in line:
-    #         parsec_node_name = line.split()[0]
-    #         break
+    output = subprocess.check_output(["kubectl", "get", "nodes", "-o", "wide"], env=env, text=True)
+    lines = output.strip().split("\n")
+    for line in lines[1:]:
+        if "parsec-server" in line:
+            parsec_node_name = line.split()[0]
+            break
 
-    # subprocess.run(["kubectl", "label", "nodes", parsec_node_name, "cca-project-nodetype=parsec"], env=env, check=True)
+    subprocess.run(["kubectl", "label", "nodes", parsec_node_name, "cca-project-nodetype=parsec"], env=env, check=True)
 
     current_time = datetime.now()
     formatted_time = current_time.strftime("%d-%m-%Y-%H-%M")    
@@ -122,3 +122,6 @@ if __name__ == '__main__':
     # Make sure there are no witnesses
     subprocess.run(["kubectl", "delete", "jobs", "--all"])
     subprocess.run(["kubectl", "delete", "pods", "--all"])
+
+    # subprocess.run(["kops", "delete", "cluster", "--name", f"part{n}a.k8s.local", "--yes"], check=True)
+    # print("Successfully deleted cluster!")
