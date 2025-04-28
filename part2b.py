@@ -9,7 +9,7 @@ env = os.environ.copy()
 env["PROJECT"] = "cca-eth-2025-group-008"
 env["KOPS_STATE_STORE"] = "gs://cca-eth-2025-group-008-dbociat"
 
-threads = [1, 2, 4, 8]
+threads = [4, 8]
 jobs = ["blackscholes", "canneal", "dedup", "ferret", "freqmine", "radix", "vips"] 
 
 NUM_RUNS = 1
