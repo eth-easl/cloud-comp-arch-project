@@ -12,7 +12,7 @@ spec:
         name: parsec-vips
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p vips -i native -n 8"]
+        args: ["-c", "./run -a run -S parsec -p vips -i native -n <n>"]
       restartPolicy: Never
       nodeSelector:
-        cca-project-nodetype: "parsec"
+        cca-project-nodetype: <node_label>

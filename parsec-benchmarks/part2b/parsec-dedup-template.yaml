@@ -1,18 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: parsec-blackscholes
+  name: parsec-dedup
   labels:
-    name: parsec-blackscholes
+    name: parsec-dedup
 spec:
   template:
     spec:
       containers:
-      - image: anakli/cca:parsec_blackscholes
-        name: parsec-blackscholes
+      - image: anakli/cca:parsec_dedup
+        name: parsec-dedup
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p blackscholes -i native -n 8"]
+        args: ["-c", "./run -a run -S parsec -p dedup -i native -n <n>"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"

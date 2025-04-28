@@ -12,7 +12,7 @@ spec:
         name: parsec-radix
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S splash2x -p radix -i native -n 8"]
+        args: ["-c", "./run -a run -S splash2x -p radix -i native -n <n>"]
       restartPolicy: Never
       nodeSelector:
-        cca-project-nodetype: "parsec"
+        cca-project-nodetype: <node_label>
