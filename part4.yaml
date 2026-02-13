@@ -13,7 +13,7 @@ spec:
   cloudConfig:
     gceServiceAccount: default
   cloudProvider: gce
-  configBase: gs://<your-gs-bucket>/part4.k8s.local
+  configBase: gs://cca-2026/part4.k8s.local
   containerRuntime: containerd
   etcdClusters:
   - cpuRequest: 200m
@@ -40,7 +40,7 @@ spec:
   networking:
     kubenet: {}
   nonMasqueradeCIDR: 100.64.0.0/10
-  project: <your-cloud-computing-architecture-gcp-project>
+  project: cca-2026
   sshAccess:
   - 0.0.0.0/0
   subnets:
@@ -89,7 +89,7 @@ metadata:
   name: memcache-server
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2-highmem-4
+  machineType: n2d-highmem-4
   maxSize: 1
   minSize: 1
   nodeLabels:
@@ -125,6 +125,7 @@ spec:
   - europe-west1
   zones:
   - europe-west1-b
+
 ---
 
 apiVersion: kops.k8s.io/v1alpha2
