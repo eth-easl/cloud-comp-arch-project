@@ -89,7 +89,7 @@ metadata:
   name: memcache-server
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2-highcpu-2
+  machineType: e2-highcpu-2
   maxSize: 1
   minSize: 1
   nodeLabels:
