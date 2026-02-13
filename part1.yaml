@@ -113,7 +113,7 @@ metadata:
   name: client-measure
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2-standard-2
+  machineType: e2-standard-2
   maxSize: 1
   minSize: 1
   nodeLabels:

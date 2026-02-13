@@ -1,18 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: parsec-dedup
+  name: parsec-barnes
   labels:
-    name: parsec-dedup
+    name: parsec-barnes
 spec:
   template:
     spec:
       containers:
-      - image: anakli/cca:parsec_dedup
-        name: parsec-dedup
+      - image: anakli/cca:splash2x_barnes
+        name: parsec-barnes
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p dedup -i native -n 1"]
+        args: ["-c", "./run -a run -S splash2x -p barnes -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"
