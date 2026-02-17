@@ -156,16 +156,16 @@ metadata:
   creationTimestamp: null
   labels:
     kops.k8s.io/cluster: part3.k8s.local
-  name: node-a-2core
+  name: node-a-8core
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: e2-highmem-2
+  machineType: e2-standard-8
   maxSize: 1
   minSize: 1
   nodeLabels:
     cloud.google.com/metadata-proxy-ready: "true"
     kops.k8s.io/instancegroup: nodes-europe-west1-b
-    cca-project-nodetype: "node-a-2core"
+    cca-project-nodetype: "node-a-8core"
   role: Node
   subnets:
   - europe-west1
@@ -179,63 +179,16 @@ metadata:
   creationTimestamp: null
   labels:
     kops.k8s.io/cluster: part3.k8s.local
-  name: node-b-2core
+  name: node-b-4core
 spec:
   image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2-highcpu-2
+  machineType: n2d-highcpu-4
   maxSize: 1
   minSize: 1
   nodeLabels:
     cloud.google.com/metadata-proxy-ready: "true"
     kops.k8s.io/instancegroup: nodes-europe-west1-b
-    cca-project-nodetype: "node-b-2core"
-  role: Node
-  subnets:
-  - europe-west1
-  zones:
-  - europe-west1-b
-
----
-apiVersion: kops.k8s.io/v1alpha2
-kind: InstanceGroup
-metadata:
-  creationTimestamp: null
-  labels:
-    kops.k8s.io/cluster: part3.k8s.local
-  name: node-c-4core
-spec:
-  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: c3-highcpu-4
-  maxSize: 1
-  minSize: 1
-  nodeLabels:
-    cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: nodes-europe-west1-b
-    cca-project-nodetype: "node-c-4core"
-  role: Node
-  rootVolumeType: pd-ssd
-  subnets:
-  - europe-west1
-  zones:
-  - europe-west1-b
-
----
-apiVersion: kops.k8s.io/v1alpha2
-kind: InstanceGroup
-metadata:
-  creationTimestamp: null
-  labels:
-    kops.k8s.io/cluster: part3.k8s.local
-  name: node-d-4core
-spec:
-  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250130
-  machineType: n2-standard-4
-  maxSize: 1
-  minSize: 1
-  nodeLabels:
-    cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: nodes-europe-west1-b
-    cca-project-nodetype: "node-d-4core"
+    cca-project-nodetype: "node-b-4core"
   role: Node
   subnets:
   - europe-west1

@@ -8,12 +8,12 @@ LOG_STRING = "{timestamp} {event} {job_name} {args}"
 class Job(Enum):
     SCHEDULER = "scheduler"
     MEMCACHED = "memcached"
+    BARNES = "barnes"
     BLACKSCHOLES = "blackscholes"
     CANNEAL = "canneal"
-    DEDUP = "dedup"
-    FERRET = "ferret"
     FREQMINE = "freqmine"
     RADIX = "radix"
+    STREAMCLUSTER = "streamcluster"
     VIPS = "vips"
 
 
@@ -21,13 +21,19 @@ class SchedulerLogger:
     def __init__(self):
         start_date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        self.file = open(f"log{start_date}.txt", "w")
+        self.file_name = f"log{start_date}.txt"
+        self.file = open(self.file_name, "w")
         self._log("start", Job.SCHEDULER)
 
     def _log(self, event: str, job_name: Job, args: str = "") -> None:
-        self.file.write(
-            LOG_STRING.format(timestamp=datetime.now().isoformat(), event=event, job_name=job_name.value,
+        if isinstance(job_name, str):
+            self.file.write(
+            LOG_STRING.format(timestamp=datetime.now().isoformat(), event=event, job_name=job_name,
                               args=args).strip() + "\n")
+        else:
+            self.file.write(
+                LOG_STRING.format(timestamp=datetime.now().isoformat(), event=event, job_name=job_name.value,
+                                args=args).strip() + "\n")
 
     def job_start(self, job: Job, initial_cores: list[str], initial_threads: int) -> None:
         assert job != Job.SCHEDULER, "You don't have to log SCHEDULER here"
@@ -61,3 +67,6 @@ class SchedulerLogger:
         self._log("end", Job.SCHEDULER)
         self.file.flush()
         self.file.close()
+
+    def get_file_name(self):
+        return self.file_name
