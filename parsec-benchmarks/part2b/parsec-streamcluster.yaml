@@ -12,7 +12,7 @@ spec:
         name: parsec-streamcluster
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p streamcluster -i simlarge -n 1"]
+        args: ["-c", "./run -a run -S parsec -p streamcluster -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "parsec"
