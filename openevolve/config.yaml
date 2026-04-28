@@ -22,6 +22,20 @@ prompt:
   # system_message: "name_of_file"
   #
   # The system message will be the content of the file <path-to-prompt-directory>/name_of_file.txt
+  system_message: |
+    You are optimizing a Kubernetes scheduling policy for ETH CCA Part 3.
+    The policy is a Python get_schedule() function returning exactly seven dictionaries:
+    barnes, blackscholes, canneal, freqmine, radix, streamcluster, and vips.
+    Each dictionary must contain name, yaml, node, cores, and threads.
+    Valid nodes are node-a-8core and node-b-4core.
+    node-a-8core has cores 1-7 available for batch jobs; core 0 is reserved for memcached.
+    node-b-4core has cores 0-3 available.
+    The runner starts memcached first, pins it to node-a core 0, runs mcperf at about 30K QPS,
+    then greedily launches pending jobs whenever their requested cores are free.
+    Use Part 2 measurements as guidance:
+    streamcluster, canneal, and freqmine are long jobs; radix is very short; vips, barnes, and blackscholes are shorter.
+    Prefer schedules that keep both nodes busy, finish all seven jobs, and keep max mcperf p95 latency below 1000 us.
+    Do not use node-a core 0. Do not add extra dependencies. Only edit inside the EVOLVE block.
 
 # You can learn more about these and other parameters here: https://github.com/algorithmicsuperintelligence/openevolve/blob/main/configs/default_config.yaml
 database:
